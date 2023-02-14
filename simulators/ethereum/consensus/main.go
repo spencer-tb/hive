@@ -181,7 +181,7 @@ var ruleset = map[string]envvars{
 	},
 	"ByzantiumToConstantinopleAt5": {
 		"HIVE_FORK_HOMESTEAD": 0,
-		//"HIVE_FORK_DAO_BLOCK":      2000,
+		// "HIVE_FORK_DAO_BLOCK":      2000,
 		"HIVE_FORK_TANGERINE":      0,
 		"HIVE_FORK_SPURIOUS":       0,
 		"HIVE_FORK_BYZANTIUM":      0,
@@ -193,7 +193,7 @@ var ruleset = map[string]envvars{
 	},
 	"ByzantiumToConstantinopleFixAt5": {
 		"HIVE_FORK_HOMESTEAD": 0,
-		//"HIVE_FORK_DAO_BLOCK":      2000,
+		// "HIVE_FORK_DAO_BLOCK":      2000,
 		"HIVE_FORK_TANGERINE":      0,
 		"HIVE_FORK_SPURIOUS":       0,
 		"HIVE_FORK_BYZANTIUM":      0,
@@ -217,7 +217,7 @@ var ruleset = map[string]envvars{
 	},
 	"IstanbulToBerlinAt5": {
 		"HIVE_FORK_HOMESTEAD": 0,
-		//"HIVE_FORK_DAO_BLOCK":      2000,
+		// "HIVE_FORK_DAO_BLOCK":      2000,
 		"HIVE_FORK_TANGERINE":      0,
 		"HIVE_FORK_SPURIOUS":       0,
 		"HIVE_FORK_BYZANTIUM":      0,
@@ -229,7 +229,7 @@ var ruleset = map[string]envvars{
 	},
 	"BerlinToLondonAt5": {
 		"HIVE_FORK_HOMESTEAD": 0,
-		//"HIVE_FORK_DAO_BLOCK":      2000,
+		// "HIVE_FORK_DAO_BLOCK":      2000,
 		"HIVE_FORK_TANGERINE":      0,
 		"HIVE_FORK_SPURIOUS":       0,
 		"HIVE_FORK_BYZANTIUM":      0,
@@ -241,7 +241,7 @@ var ruleset = map[string]envvars{
 	},
 	"London": {
 		"HIVE_FORK_HOMESTEAD": 0,
-		//"HIVE_FORK_DAO_BLOCK":      2000,
+		// "HIVE_FORK_DAO_BLOCK":      2000,
 		"HIVE_FORK_TANGERINE":      0,
 		"HIVE_FORK_SPURIOUS":       0,
 		"HIVE_FORK_BYZANTIUM":      0,
@@ -253,7 +253,7 @@ var ruleset = map[string]envvars{
 	},
 	"Merge": {
 		"HIVE_FORK_HOMESTEAD": 0,
-		//"HIVE_FORK_DAO_BLOCK":      2000,
+		// "HIVE_FORK_DAO_BLOCK":      2000,
 		"HIVE_FORK_TANGERINE":            0,
 		"HIVE_FORK_SPURIOUS":             0,
 		"HIVE_FORK_BYZANTIUM":            0,
@@ -267,7 +267,7 @@ var ruleset = map[string]envvars{
 	},
 	"Shanghai": {
 		"HIVE_FORK_HOMESTEAD": 0,
-		//"HIVE_FORK_DAO_BLOCK":      2000,
+		// "HIVE_FORK_DAO_BLOCK":      2000,
 		"HIVE_FORK_TANGERINE":            0,
 		"HIVE_FORK_SPURIOUS":             0,
 		"HIVE_FORK_BYZANTIUM":            0,
@@ -282,7 +282,7 @@ var ruleset = map[string]envvars{
 	},
 	"MergeToShanghaiAtTime15k": {
 		"HIVE_FORK_HOMESTEAD": 0,
-		//"HIVE_FORK_DAO_BLOCK":      2000,
+		// "HIVE_FORK_DAO_BLOCK":      2000,
 		"HIVE_FORK_TANGERINE":            0,
 		"HIVE_FORK_SPURIOUS":             0,
 		"HIVE_FORK_BYZANTIUM":            0,
@@ -338,7 +338,7 @@ func loaderTest(t *hivesim.T) {
 	if !isset {
 		t.Fatal("$TESTPATH not set")
 	}
-	fileRoot := fmt.Sprintf("%s/BlockchainTests/", testPath)
+	fileRoot := fmt.Sprintf("%s/", testPath)
 
 	// Spawn workers.
 	var wg sync.WaitGroup
@@ -458,6 +458,7 @@ func (tc *testcase) run(t *hivesim.T) {
 	env := hivesim.Params{
 		"HIVE_FORK_DAO_VOTE": "1",
 		"HIVE_CHAIN_ID":      "1",
+		"HIVE_NODETYPE":	  "full",
 	}
 	tc.updateEnv(env)
 	genesisTarget := strings.Replace(genesis, root, "", 1)
