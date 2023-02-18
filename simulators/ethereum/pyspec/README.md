@@ -1,13 +1,17 @@
 # Hive Pyspec
 ## The Python Execution Spec Tests Simulator
 
-This is a `simulator` for running the python [execution-spec-tests](https://github.com/ethereum/execution-spec-tests) within [`hive`](https://github.com/ethereum/hive). It can be run from the `hive` root directory, e.g for `geth`:
+This is a `simulator` for running the python [execution-spec-tests](https://github.com/ethereum/execution-spec-tests) within [`hive`](https://github.com/ethereum/hive), based on the `consensus` simulator. It differs mostly by using the `Engine API` to feed blocks into clients. 
+
+It can be run from the `hive` root directory simply, e.g for `geth`:
 ```sh
 ./hive --client go-ethereum --sim ethereum/pyspec
 ```
 
 The `pyspec simulator` uses the latest test fixtures from the
 most recent execution-spec-tests [release](https://github.com/ethereum/execution-spec-tests/releases).
+
+# Pyspec Source Files
 
 ## Dockerfile
 
@@ -50,3 +54,28 @@ The `pyspec` simulator is built using two separate containers:
     - It then adds the `pyspec` source code, similar to the first container. It also copies the previously built `pyspec` executable from first container.
     - Next, `fixtures.tar.gz` is downloaded from the most recent Ethereum `execution-spec-tests` release. The contents are extracted, removing the `tar` file afterwards. `fixtures/` is moved to the root of the `simulator` container: `~/fixtures`.
     - The next step is to set the `TESTPATH` environment variable to `/fixtures`. Afterwards the Dockerfile finally sets the `ENTRYPOINT` to `./pyspec` (its actual path: `~/pyspec/pyspec`), which means that when the container is run, the built `pyspec` simulator will be executed. Note that the `TESTPATH` environment variable is used within the executable source code.
+
+## main.go
+
+When the `pyspec` simulator is ran using `hive`, a`./pyspec` executable is built and ran within two seperate docker containers as previously mentioned. The `./pyspec` executable that is ran, is built using sevaral `Go` source files from the `pyspec` project root: `hive/simulators/ethereum/pyspec`. 
+
+Lets discuss the `main.go` file which acts as the entry point to the overall `pyspec` simulator <- built executable <- program. Starting at the top of the program tree is the `main()` function:
+
+```go
+func main() {
+	suite := hivesim.Suite{
+		Name: "pyspec",
+		Description: "insert witty description here",
+    }
+	suite.Add(hivesim.TestSpec{
+		Name: "pyspec_fixture_runner",
+		Description: "insert witty description here",
+		Run:       fixtureRunner,
+		AlwaysRun: true,
+	})
+	hivesim.MustRunSuite(hivesim.New(), suite)
+}
+```
+At a high-level the `main()` function first sets up the test suite using the `hivesim.Suite` struct and adds a single test to the suite, named `pyspec_fixture_runner`. This is a `meta-test` which simply launches the actual client testing process within `hive`. Once the `hive` suite is setup, it is ran by calling the `MustRunSuite()` function, using the configured suite as input, from a package named `hivesim`. 
+
+Wheh suite is ran via executable in the docker container (or otherwise) the `pyspec_fixture_runner` `hivesim.TestSpec` simply calls the function `fixtureRunner()`, starting the test suite.
