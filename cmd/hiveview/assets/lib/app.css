@@ -1,6 +1,6 @@
-@import "../extlib/bootstrap-5.2.3.min.css";
-@import "../extlib/dataTables-1.13.1.bootstrap5.min.css";
-@import "../extlib/responsive-2.4.0.bootstrap5.min.css";
+@import "../extlib/bootstrap-5.2.3.css";
+@import "../extlib/dataTables-1.13.1.bootstrap5.css";
+@import "../extlib/responsive-2.4.0.bootstrap5.css";
 
 main {
     margin: 8px 8px;
@@ -44,8 +44,8 @@ main {
     color: black;
 }
 
-.test-name-column {
-    background: url('/images/details_open.svg') no-repeat left 4px;
+td.test-name-column {
+    background: url('../images/details_open.svg') no-repeat left 4px;
     background-size: 32px;
     cursor: pointer;
     padding-left: 32px !important;
@@ -61,15 +61,15 @@ main {
 }
 
 tr.failed td.test-name-column {
-    background-image: url('/images/details_open_err.svg');
+    background-image: url('../images/details_open_err.svg');
 }
 
 tr.shown td.test-name-column {
-    background-image: url('/images/details_close.svg');
+    background-image: url('../images/details_close.svg');
 }
 
 tr.shown.failed td.test-name-column {
-    background-image: url('/images/details_close_err.svg');
+    background-image: url('../images/details_close_err.svg');
 }
 
 td.ellipsis {
@@ -131,9 +131,12 @@ td.ellipsis {
     font-weight: bold;
 }
 
-.highlighted, .dataTable tr.highlighted {
+.dataTable tr {
+    scroll-margin: 8em 0 0 0;
+}
+
+.dataTable tr.highlighted {
     background-color: #fffaea;
-    scroll-margin: 5em 0 0 0;
 }
 
 /* workaround for weird DataTables controls styling at small screen size */

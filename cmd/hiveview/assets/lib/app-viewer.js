@@ -1,9 +1,10 @@
-import { $ } from '../extlib/jquery.module.js'
+import { $ } from 'jquery'
 import { html, nav, format, loader } from './utils.js'
-import * as app from './app.js'
+import * as routes from './routes.js'
+import * as common from './common.js'
 
-function navigate() {
-    app.init();
+$(document).ready(function () {
+    common.updateHeader();
 
     // Check for line number in hash.
     var line = null;
@@ -26,7 +27,7 @@ function navigate() {
             showError("Invalid parameters! Missing 'suitefile' or 'testid' in URL.");
             return;
         }
-        fetchTestLog(app.resultsRoot + suiteFile, testIndex, line);
+        fetchTestLog(routes.resultsRoot + suiteFile, testIndex, line);
         return;
     }
 
@@ -41,9 +42,7 @@ function navigate() {
 
     // Show default text because nothing was loaded.
     showText(document.getElementById("exampletext").innerHTML);
-}
-
-$(document).ready(navigate);
+})
 
 // setHL sets the highlight on a line number.
 function setHL(num, scroll) {
@@ -71,14 +70,15 @@ function setHL(num, scroll) {
 
 // showLinkBack displays the link to the test viewer.
 function showLinkBack(suiteID, suiteName, testID) {
-    let linkText = "Back to test suite: " + suiteName;
-    var linkURL;
+    var text, url;
     if (testID) {
-        linkURL = app.route.testInSuite(suiteID, suiteName, testID);
+        text = "Back to test " + testID + " in suite ‘" + suiteName + "’";
+        url = routes.testInSuite(suiteID, suiteName, testID);
     } else {
-        linkURL = app.route.suite(suiteID, suiteName);
+        text = "Back to test suite ‘" + suiteName + "’";
+        url = routes.suite(suiteID, suiteName);
     }
-    $('#link-back').html(html.get_link(linkURL, linkText));
+    $('#link-back').html(html.get_link(url, text));
 }
 
 function showTitle(type, title) {
@@ -147,7 +147,7 @@ function lineNumberClicked() {
 
 // fetchFile loads up a new file to view
 function fetchFile(url, line /* optional jump to line */ ) {
-    let resultsRE = new RegExp("^" + app.resultsRoot);
+    let resultsRE = new RegExp("^" + routes.resultsRoot);
     $.ajax({
         xhr: loader.newXhrWithProgressBar,
         url: url,

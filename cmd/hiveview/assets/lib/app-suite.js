@@ -1,11 +1,15 @@
-import '../extlib/bootstrap.module.js'
-import '../extlib/dataTables.module.js'
-import { $ } from '../extlib/jquery.module.js'
+import 'datatables.net'
+import 'datatables.net-bs5'
+import 'datatables.net-responsive'
+import 'datatables.net-responsive-bs5'
+import { $ } from 'jquery'
+
 import { html, nav, format, loader } from './utils.js'
-import * as app from './app.js'
+import * as routes from './routes.js'
+import * as common from './common.js'
 
 $(document).ready(function () {
-	app.init();
+	common.updateHeader();
 
 	let name = nav.load("suitename");
 	if (name) {
@@ -25,7 +29,7 @@ $(document).ready(function () {
 	$.ajax({
 		xhr: loader.newXhrWithProgressBar,
 		type: 'GET',
-		url: app.resultsRoot + filename,
+		url: routes.resultsRoot + filename,
 		dataType: 'json',
 		success: function(suiteData) {
 			showSuiteData(suiteData, filename);
@@ -118,8 +122,8 @@ function showSuiteData(data, suiteID) {
 	let suiteTimes = testSuiteTimes(cases);
 	$("#testsuite_start").html("🕒 " + suiteTimes.start.toLocaleString());
 	$("#testsuite_duration").html("⌛️ " + format.duration(suiteTimes.duration));
-	let logfile = app.resultsRoot + data.simLog;
-	let url = app.route.logFileInViewer(suiteID, suiteName, logfile);
+	let logfile = routes.resultsRoot + data.simLog;
+	let url = routes.simulatorLog(suiteID, suiteName, logfile);
 	$("#sim-log-link").attr("href", url);
 	$("#sim-log-link").text("simulator log");
 	$("#testsuite_info").show();
@@ -180,8 +184,8 @@ function showSuiteData(data, suiteID) {
 				data: "clientInfo",
 				width: "20%",
 				responsivePriority: 1,
-				render: function (clientInfo) {
-					return formatClientLogsList(data, clientInfo);
+				render: function (clientInfo, type, row) {
+					return formatClientLogsList(data, row.testIndex, clientInfo);
 				}
 			},
 		],
@@ -297,14 +301,18 @@ function deselectTest(row, closeDetails) {
 	history.replaceState(null, null, '#');
 }
 
+function testHasClients(testData) {
+	return testData.clientInfo && Object.getOwnPropertyNames(testData.clientInfo).length > 0;
+}
+
 // formatClientLogsList turns the clientInfo part of a test into a list of links.
-function formatClientLogsList(suiteData, clientInfo) {
+function formatClientLogsList(suiteData, testIndex, clientInfo) {
 	let links = [];
 	for (let instanceID in clientInfo) {
 		let instanceInfo = clientInfo[instanceID]
-		let logfile = app.resultsRoot + instanceInfo.logFile;
-		let url = app.route.logFileInViewer(suiteData.suiteID, suiteData.name, logfile);
-		let link = html.get_link(url, instanceInfo.name)
+		let logfile = routes.resultsRoot + instanceInfo.logFile;
+		let url = routes.clientLog(suiteData.suiteID, suiteData.name, testIndex, logfile);
+		let link = html.get_link(url, instanceInfo.name);
 		link.classList.add('log-link');
 		links.push(link.outerHTML);
 	}
@@ -336,9 +344,9 @@ function formatTestDetails(suiteData, row) {
 		p.innerHTML = formatTestStatus(d.summaryResult);
 		container.appendChild(p);
 	}
-	if (!row.column('logs:name').responsiveHidden()) {
+	if (!row.column('logs:name').responsiveHidden() && testHasClients(d)) {
 		let p = document.createElement("p");
-		p.innerHTML = '<b>Clients:</b> ' + formatClientLogsList(suiteData, d.clientInfo);
+		p.innerHTML = '<b>Clients:</b> ' + formatClientLogsList(suiteData, d.testIndex, d.clientInfo);
 		container.appendChild(p);
 	}
 	if (!row.column('duration:name').responsiveHidden()) {
@@ -350,7 +358,7 @@ function formatTestDetails(suiteData, row) {
 	if (d.description != "") {
 		let p = document.createElement("p");
 		let description = html.urls_to_links(html.encode(d.description.trim()));
-		let txt = "<b>Description</b><br/>" + description;
+		let txt = "<b>Description:</b><br/>" + description;
 		p.innerHTML = txt;
 		container.appendChild(p)
 	}
@@ -439,7 +447,7 @@ function formatTestLog(suiteData, test) {
 	if (hiddenLines > 0) {
 		// Create the truncation marker.
 		let linkText = "..." + hiddenLines + " lines hidden: click for full output...";
-		let linkURL = app.route.testLogInViewer(suiteData.suiteID, suiteData.name, test.testIndex);
+		let linkURL = routes.testLog(suiteData.suiteID, suiteData.name, test.testIndex);
 		let trunc = html.get_link(linkURL, linkText);
 		trunc.classList.add("output-trunc");
 		output.appendChild(trunc);

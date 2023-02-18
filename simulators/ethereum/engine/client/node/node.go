@@ -690,9 +690,10 @@ func (n *GethNode) SetBlock(block *types.Block, parentNumber uint64, parentRoot 
 }
 
 // Engine API
-func (n *GethNode) NewPayloadV1(ctx context.Context, pl *beacon.ExecutableData) (beacon.PayloadStatusV1, error) {
-	n.latestPayloadSent = pl
-	resp, err := n.api.NewPayloadV1(*pl)
+func (n *GethNode) NewPayloadV1(ctx context.Context, pl *client_types.ExecutableDataV1) (beacon.PayloadStatusV1, error) {
+	ed := pl.ToExecutableData()
+	n.latestPayloadSent = &ed
+	resp, err := n.api.NewPayloadV1(ed)
 	n.latestPayloadStatusReponse = &resp
 	return resp, err
 }
@@ -802,6 +803,16 @@ func (n *GethNode) SendTransaction(ctx context.Context, tx *types.Transaction) e
 	return n.eth.APIBackend.SendTx(ctx, tx)
 }
 
+func (n *GethNode) SendTransactions(ctx context.Context, txs []*types.Transaction) []error {
+	for _, tx := range txs {
+		err := n.eth.APIBackend.SendTx(ctx, tx)
+		if err != nil {
+			return []error{err}
+		}
+	}
+	return nil
+}
+
 func (n *GethNode) getStateDB(ctx context.Context, blockNumber *big.Int) (*state.StateDB, error) {
 	b, err := n.eth.APIBackend.BlockByNumber(ctx, parseBlockNumber(blockNumber))
 	if err != nil {
@@ -896,6 +907,19 @@ func (n *GethNode) GetNextAccountNonce(testCtx context.Context, account common.A
 		PreviousNonce: nonce,
 	}
 	return nonce, nil
+}
+
+func (n *GethNode) UpdateNonce(testCtx context.Context, account common.Address, newNonce uint64) error {
+	// First get the current head of the client where we will send the tx
+	head, err := n.eth.APIBackend.BlockByNumber(testCtx, LatestBlockNumber)
+	if err != nil {
+		return err
+	}
+	n.accTxInfoMap[account] = &AccountTransactionInfo{
+		PreviousBlock: head.Hash(),
+		PreviousNonce: newNonce,
+	}
+	return nil
 }
 
 func (n *GethNode) PostRunVerifications() error {

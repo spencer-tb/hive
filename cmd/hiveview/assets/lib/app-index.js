@@ -1,38 +1,41 @@
-import '../extlib/bootstrap.module.js'
-import '../extlib/dataTables.module.js'
-import { $ } from '../extlib/jquery.module.js'
-import { html, format, nav } from './utils.js'
-import * as app from './app.js'
+import 'datatables.net'
+import 'datatables.net-bs5'
+import 'datatables.net-responsive'
+import 'datatables.net-responsive-bs5'
+import { $ } from 'jquery'
 
-$(document).ready(function() {
-	app.init();
+import { html, format } from './utils.js'
+import * as routes from './routes.js'
+import * as common from './common.js'
 
+$(document).ready(function () {
+	common.updateHeader();
+
+	$('#loading').show();
 	console.log("Loading file list...");
-	$.ajax("listing.jsonl", {
-		success: showFileListing,
+	$.ajax({
+		type: 'GET',
+		url: "listing.jsonl",
+		cache: false,
+		success: function(data) {
+			$('#page-text').show();
+			showFileListing(data);
+		},
 		failure: function(status, err) {
 			alert(err);
 		},
+		complete: function () {
+			$('#loading').hide();
+		},
 	});
-});
-
-function resultStats(fails, success, total) {
-	f = parseInt(fails), s = parseInt(success);
-	t = parseInt(total);
-	f = isNaN(f) ? "?" : f;
-	s = isNaN(s) ? "?" : s;
-	t = isNaN(t) ? "?" : t;
-	return '<b><span class="text-danger">' + f +
-		'</span>&nbsp;:&nbsp;<span class="text-success">' + s +
-		'</span> &nbsp;/&nbsp;' + t + '</b>';
-}
+})
 
 function linkToSuite(suiteID, suiteName, linkText) {
-	let url = app.route.suite(suiteID, suiteName);
+	let url = routes.suite(suiteID, suiteName);
 	return html.get_link(url, linkText);
 }
 
-function showFileListing(data, error) {
+function showFileListing(data) {
 	console.log("Got file list")
 	// the data is jsonlines
 	/*
