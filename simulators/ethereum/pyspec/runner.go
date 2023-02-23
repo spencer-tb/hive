@@ -18,9 +18,10 @@ import (
 
 // ---------------------------------------------------------------------------//
 // loadFixtureTests() yields every test recursively within a fixture.json     //
-// file from the given 'root' path, alongside each tests payloads. It passes  //
-// the tests to the func() 'fn' yielded directly within fixtureRunner(), such //
-// that workers can start to run the tests against each client.               //
+// file from the given 'root' path. Each test is yieled within a testcase     //
+// struct that holds its genesis elements, payloads and post allocation.      //
+// This is passed to the func() 'fn' yielded directly within fixtureRunner(), //
+// such that workers can start to run the tests against each client.          //
 // ---------------------------------------------------------------------------//
 func loadFixtureTests(t *hivesim.T, root string, fn func(testcase)) {
 	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
@@ -33,7 +34,6 @@ func loadFixtureTests(t *hivesim.T, root string, fn func(testcase)) {
 			return nil
 		}
 		if fname := info.Name(); !strings.HasSuffix(fname, ".json") {
-		//TESTING: if fname := info.Name(); !strings.HasSuffix(fname, "initcode_limit_contract_creating_tx.json") {
 			return nil
 		}
 

@@ -24,14 +24,15 @@ func main() {
 		Name: "pyspec",
 		Description: "The 'pyspec' test suite runs every test fixture from " +
 			"the execution-spec-tests repository (https://github.com/ethereum/execution-spec-tests)" +
-			"against each client specified in the hive simulation run. The clients are first" +
-			"fed a fixture genesisRLP field. After the import phase the node is queried about it's latest blocks," +
-			" which is matched to the expected last blockhash according to the test.",
+			"against each client specified in the hive simulation run for forks >= Merge. " + 
+			"The clients are first fed a fixture genesis field, followed by each fixture block. " +
+			"The last valid block is then queried for its storage, nonce & balance, that are compared" +
+			"against the expected values from the test fixture file. This is all achieved using the EngineAPI.",
 	}
 	suite.Add(hivesim.TestSpec{
 		Name: "pytest_fixture_runner",
-		Description: "This is a meta-test. It loads the blockchain test files and " +
-			"launches the actual client tests. Any errors in test files will be reported " +
+		Description: "This is a meta-test. It loads the test fixture files and " +
+			"launches the actual client tests.,w,w Any errors in test files will be reported " +
 			"through this test.",
 		Run:       fixtureRunner,
 		AlwaysRun: true,

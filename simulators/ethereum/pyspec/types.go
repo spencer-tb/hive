@@ -173,7 +173,7 @@ func (b *blockHeader) UnmarshalJSON(input []byte) error {
 
 type transactions struct {
 	Nonce            *big.Int         `json:"nonce"`
-	To               *common.Address  `json:"to.omitempty"`
+	To               common.Address   `json:"to.omitempty"`
 	Value            *big.Int         `json:"value"`
 	Data             []byte           `json:"data"`
 	GasLimit         uint64           `json:"gasLimit"`
@@ -199,7 +199,7 @@ func (t *transactions) UnmarshalJSON(input []byte) error {
 		t.Nonce = (*big.Int)(dec.Nonce)
 	}
 	if dec.To != nil {
-		t.To = dec.To
+		t.To = *dec.To
 	}
 	if dec.Value != nil {
 		t.Value = (*big.Int)(dec.Value)
