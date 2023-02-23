@@ -8,17 +8,21 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core"
+	api "github.com/ethereum/go-ethereum/core/beacon"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 type testcase struct {
 	name       string
 	clientType string
 	fixture    fixtureTest
+	genesis    *core.Genesis
+	payloads   []*api.ExecutableData
+	postAlloc  core.GenesisAlloc
 	filepath   string
 }
 
-// A fixtureTest checks handling of entire blocks.
 type fixtureTest struct {
 	json fixtureJSON
 }
@@ -42,11 +46,11 @@ type fixtureJSON struct {
 }
 
 type block struct {
-	Rlp          string			 `json:"rlp"`
-	BlockHeader  *blockHeader    `json:"blockHeader"`
-	Transactions []transactions  `json:"transactions"`
-	UncleHeaders []blockHeader	 `json:"uncleHeaders"`
-	Withdrawals	 []withdrawals	 `json:"withdrawals"`
+	Rlp          string			     `json:"rlp"`
+	BlockHeader  *blockHeader        `json:"blockHeader"`
+	Transactions []transactions      `json:"transactions"`
+	UncleHeaders []byte              `json:"uncleHeaders"`
+	Withdrawals	 []withdrawals       `json:"withdrawals"`
 }
 
 type blockHeader struct {
@@ -169,7 +173,7 @@ func (b *blockHeader) UnmarshalJSON(input []byte) error {
 
 type transactions struct {
 	Nonce            *big.Int         `json:"nonce"`
-	To               common.Address   `json:"to"`
+	To               *common.Address  `json:"to.omitempty"`
 	Value            *big.Int         `json:"value"`
 	Data             []byte           `json:"data"`
 	GasLimit         uint64           `json:"gasLimit"`
@@ -180,7 +184,7 @@ type transactions struct {
 func (t *transactions) UnmarshalJSON(input []byte) error {
 	type transactions struct {
 		Nonce            *math.HexOrDecimal256 `json:"nonce"`
-		To               *common.Address       `json:"to"`
+		To               *common.Address       `json:"to.omitempty"`
 		Value            *math.HexOrDecimal256 `json:"value"`
 		Data             *hexutil.Bytes        `json:"data"`
 		GasLimit         *math.HexOrDecimal64  `json:"gasLimit"`
@@ -195,7 +199,7 @@ func (t *transactions) UnmarshalJSON(input []byte) error {
 		t.Nonce = (*big.Int)(dec.Nonce)
 	}
 	if dec.To != nil {
-		t.To = *dec.To
+		t.To = dec.To
 	}
 	if dec.Value != nil {
 		t.Value = (*big.Int)(dec.Value)
@@ -221,8 +225,7 @@ type withdrawals struct {
 	Address          common.Address `json:"address"`
 	Amount           *big.Int       `json:"amount"`
 }
-
-func (w *withdrawals) UnmarshalJSON(input []byte) error {
+func (w withdrawals) UnmarshalJSON(input []byte) error {
 	type withdrawals struct {
 		Index            *math.HexOrDecimal256  `json:"index"`
 		ValidatorIndex   *math.HexOrDecimal256  `json:"validatorIndex"`
@@ -246,4 +249,32 @@ func (w *withdrawals) UnmarshalJSON(input []byte) error {
 		w.Amount = (*big.Int)(dec.Amount)
 	}
 	return nil
+}
+
+func extractGenesis(fixture fixtureJSON) (*core.Genesis){
+	genesis := &core.Genesis{
+		Nonce:      fixture.Genesis.Nonce.Uint64(),
+		Timestamp:  fixture.Genesis.Timestamp.Uint64(),
+		ParentHash: fixture.Genesis.ParentHash,
+		ExtraData:  fixture.Genesis.ExtraData,
+		GasLimit:   fixture.Genesis.GasLimit,
+		GasUsed:    fixture.Genesis.GasUsed,
+		Number: 	fixture.Genesis.Number.Uint64(),
+		Difficulty: fixture.Genesis.Difficulty,
+		Mixhash:    fixture.Genesis.MixHash,
+		Coinbase:   fixture.Genesis.Coinbase,
+		Alloc:      fixture.Pre,
+		BaseFee:    fixture.Genesis.BaseFee,
+	}
+	return genesis
+}
+
+func (bl *block) decodeBlock() (*types.Block, error) {
+	data, err := hexutil.Decode(bl.Rlp)
+	if err != nil {
+		return nil, err
+	}
+	var b types.Block
+	err = rlp.DecodeBytes(data, &b)
+	return &b, err
 }

@@ -2,28 +2,26 @@ package main
 
 import (
 	"context"
-	"crypto/sha1"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/rpc"
+	api "github.com/ethereum/go-ethereum/core/beacon"
 	"github.com/ethereum/hive/hivesim"
 	"github.com/ethereum/hive/simulators/ethereum/engine/client/hive_rpc"
 	"github.com/ethereum/hive/simulators/ethereum/engine/globals"
 )
 
-// ------------------------------------------------------------------------//
-// loadFixtureTests() yields every test recursively within a fixture.json  //
-// file from the given 'root' path. It passes the tests to the func() 'fn' //
-// yielded directly within fixtureRunner(), such that workers can start to //
-// run the tests against each client.									   //
-// ------------------------------------------------------------------------//
+// ---------------------------------------------------------------------------//
+// loadFixtureTests() yields every test recursively within a fixture.json     //
+// file from the given 'root' path, alongside each tests payloads. It passes  //
+// the tests to the func() 'fn' yielded directly within fixtureRunner(), such //
+// that workers can start to run the tests against each client.               //
+// ---------------------------------------------------------------------------//
 func loadFixtureTests(t *hivesim.T, root string, fn func(testcase)) {
 	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		// check file is actually a fixture	
@@ -35,303 +33,164 @@ func loadFixtureTests(t *hivesim.T, root string, fn func(testcase)) {
 			return nil
 		}
 		if fname := info.Name(); !strings.HasSuffix(fname, ".json") {
-			return nil
-		}
-		if fname := info.Name(); !strings.HasSuffix(fname, "withdrawals_balance_within_block.json") {
+		//TESTING: if fname := info.Name(); !strings.HasSuffix(fname, "initcode_limit_contract_creating_tx.json") {
 			return nil
 		}
 
-		// extract fixture.json tests into fixtureTest structs
+		// extract fixture.json tests (multiple forks) into fixtureTest structs
 		var fixtureTests map[string] fixtureTest
 		if err := common.LoadJSON(path, &fixtureTests); err != nil {
 			t.Logf("invalid test file: %v, unable to load json", err)
 			return nil
 		}
-		
-		// Only feed in one fixture 
+
+		// create testcase structure from fixtureTests
 		for name, fixture := range fixtureTests {
-			tc := testcase{fixture: fixture, name: name, filepath: path}
-			// t.Logf("----- transactions: %v", fixture.json.Blocks[0].Transactions)	
-			if err := tc.validate(); err != nil {
-				t.Errorf("test validation failed for %s: %v", tc.name, err)
-				continue
+			network := fixture.json.Network
+			// skip networks post merge
+			for _, skip := range []string{"Istanbul", "Berlin", "London"} {
+				if strings.Contains(network, skip) {
+					continue
+				}
 			}
+			// check network is valid 
+			if _, exist := envForks[network]; !exist {
+				return fmt.Errorf("network `%v` not defined in fork ruleset", network)
+			}
+
+			// extract genesis fields from fixture test
+			genesis := extractGenesis(fixture.json)
+
+			// extract payloads from each block
+			payloads := []*api.ExecutableData{}
+			for _, block := range fixture.json.Blocks {
+				gblock, _ := block.decodeBlock()
+				payload := api.BlockToExecutableData(gblock, common.Big0).ExecutionPayload
+				payloads = append(payloads, payload)
+			}
+
+			// extract post account information
+			postAlloc := fixture.json.Post
+
+			// define testcase struct adding the extracted fields
+			tc := testcase {
+				fixture: fixture, 
+				name: name, 
+				filepath: path,
+				genesis: genesis,  
+				payloads: payloads,
+				postAlloc: postAlloc,
+			}
+
+			// feed testcase to single worker within fixtureRunner()
 			fn(tc)
 		}
 		return nil
-	})
-}
-func loadFixturePayloads(t *hivesim.T, root string, fn func(testcase)) {
-	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		// check file is actually a fixture	
-		if err != nil {
-			t.Logf("unable to walk path: %s", err)
-			return err
-		}
-		if info.IsDir() { 
-			return nil
-		}
-		if fname := info.Name(); !strings.HasSuffix(fname, ".json") {
-			return nil
-		}
-		if fname := info.Name(); !strings.HasSuffix(fname, "withdrawals_balance_within_block.json") {
-			return nil
-		}
 
-		// extract fixture.json tests into fixtureTest structs
-		var fixtureTests map[string] fixtureTest
-		if err := common.LoadJSON(path, &fixtureTests); err != nil {
-			t.Logf("invalid test file: %v, unable to load json", err)
-			return nil
-		}
-		
-		// Only feed in one fixture 
-		for name, fixture := range fixtureTests {
-			tc := testcase{fixture: fixture, name: name, filepath: path}
-			// t.Logf("----- transactions: %v", fixture.json.Blocks[0].Transactions)	
-			if err := tc.validate(); err != nil {
-				t.Errorf("test validation failed for %s: %v", tc.name, err)
-				continue
-			}
-			fn(tc)
-		}
-		return nil
 	})
-}
-
-// --------------------------------------------------------------------------//
-// validate() returns an error if the fixture fork network is not supported. //
-// --------------------------------------------------------------------------//
-func (tc *testcase) validate() error {
-	network := tc.fixture.json.Network
-	if _, exist := ruleset[network]; !exist {
-		return fmt.Errorf("network `%v` not defined in ruleset", network)
-	}
-	return nil
 }
 
 // run launches the client and runs the test case against it.
 func (tc *testcase) run(t *hivesim.T) {
-	// start := time.Now()
+	start := time.Now()
 
-	// get paths for testcase root, including genesis.json & blockRLPs artefacts.
-	// rootDir, genesisJson, blockRLPs, err := tc.createArtefacts()
-	_, genesisJson, _, err := tc.createArtefacts()
-	if err != nil {
-		t.Fatal("can't prepare artefacts:", err)
-	}
-
-	// manually update testcase-specific hivesim parameters.
-	env := hivesim.Params{
-		"HIVE_FORK_DAO_VOTE": "1",
-		"HIVE_CHAIN_ID":      "1",
-	}
-	
-	tc.updateEnv(env)
-
-	// initialise a client files map. use structure ["/genesis.json": "rootDir/genesis.json"].
-	clientFiles := map[string]string{
-		"/genesis.json": genesisJson,
-	}
-
-	// start client (also creates an engine RPC client internally)
-	genesis := getGenesis(&tc.fixture.json) //todo
-	testContext := context.Background()
-
+	t.Log("HIVE LOG --> Setting variables required for starting client.")
 	engineAPI := hive_rpc.HiveRPCEngineStarter{
 		ClientType: tc.clientType,
 		EnginePort: globals.EnginePortHTTP,
 		EthPort:    globals.EthPortHTTP,
 		JWTSecret:  globals.DefaultJwtTokenSecretBytes,
 	}
-	engineClient, err := engineAPI.StartClient(
-		t, 
-		testContext, 
-		genesis,
-	    env,
-		clientFiles,
-	)
+	ctx := context.Background()
+	env := hivesim.Params{
+		"HIVE_FORK_DAO_VOTE": "1",
+		"HIVE_CHAIN_ID":      "1",
+		"HIVE_SKIP_POW":      "1",
+		"HIVE_NODETYPE": 	  "full",
+	}
+	tc.updateEnv(env)
+	t0 := time.Now()
+
+	// start client (also creates an engine RPC client internally)
+	t.Log("HIVE LOG --> Starting client with Engine API.")
+	engineClient, err := engineAPI.StartClient(t, ctx, tc.genesis, env, nil)
 	if err != nil {
-		t.Fatal("can't start client with engine api:", err)
+		t.Fatalf("HIVE FATAL --> Can't start client with Engine API: %v", err)
 	}
+	t1 := time.Now()
 
-	hashes := []common.Hash{}
-	for _, block := range tc.fixture.json.Blocks {
-		hashes = append(hashes, block.BlockHeader.Hash)
+	// send payloads
+	for blockNumber, payload :=  range tc.payloads {
+		_, err := engineClient.NewPayloadV2(context.Background(), payload)
+		if err != nil {
+			t.Fatalf("HIVE FATAL ---> Unable to send payload[%v] in test %s: %v ", blockNumber, tc.name, err)
+		}
 	}
-	fmt.Print("------------ %v", hashes)
+	t2 := time.Now()
+
+	// update head of "beacon" chain with the latest valid response
+	latestBlockHash := *engineClient.LatestNewPayloadResponse().LatestValidHash
+	fcState := &api.ForkchoiceStateV1{HeadBlockHash: latestBlockHash}
+	engineClient.ForkchoiceUpdatedV2(ctx, fcState, nil)
+	t3 := time.Now()
+
+	// check nonce, balance & storage of accounts in final block against fixture values
+	latestBlockNumber := new(big.Int).SetUint64(engineClient.LatestNewPayloadSent().Number)
+	for account, genesisAccount :=  range tc.postAlloc {
+
+		// get nonce & balance from last block (end of test execution)
+		gotNonce, errN := engineClient.NonceAt(ctx, account, latestBlockNumber)
+		gotBalance, errB := engineClient.BalanceAt(ctx, account, latestBlockNumber)
+		if errN != nil {
+			t.Errorf("HIVE ERROR ---> Unable to call nonce from account: %v, in test %s: %v", account, tc.name, errN)
+		} else if errB != nil {
+			t.Errorf("HIVE ERROR ---> Unable to call balance from account: %v, in test %s: %v", account, tc.name, errB)
+		} 
+
+		// check final nonce & balance matches expected in fixture 
+		if genesisAccount.Nonce != gotNonce {
+			t.Errorf(`HIVE ERROR ---> Nonce recieved from account %v doesn't match expected from fixture in test %s:
+			Recieved from block: %v
+			Expected in fixture: %v`, account, tc.name, gotNonce, genesisAccount.Nonce)
+		}
+		if common.BigToHash(genesisAccount.Balance) != common.BigToHash(gotBalance) {
+			t.Errorf(`HIVE ERROR ---> Balance recieved from account %v doesn't match expected from fixture in test %s:
+			Recieved from block: %v
+			Expected in fixture: %v`, account, tc.name, gotBalance, genesisAccount.Balance)
+		}
 	
-	pb, err := engineClient.GetPayloadBodiesByHashV1(context.Background(), hashes)
-	fmt.Print("------------ %v", pb )
+		// check values in storage match those in fixture
+		for stPosition, stValue := range genesisAccount.Storage {
+			// get value in storage position stPosition from last block
+			gotStorage, errS := engineClient.StorageAt(ctx, account, common.BytesToHash(stPosition.Bytes()), latestBlockNumber)
+			if errS != nil {
+				t.Errorf("HIVE ERROR ---> Unable to call storage bytes from account address %v, storage position %v, in test %s: %v", account, stPosition, tc.name, errS)
+			}
+			// check recieved value against fixture value
+			if stValue != common.BytesToHash(gotStorage) {
+				t.Errorf(`HIVE ERROR ---> Storage recieved from account %v doesn't match expected from fixture in test %s:
+				From storage address: %v
+				Recieved from block: %v
+				Expected in fixture: %v`, account, tc.name, stPosition, common.BytesToHash(gotStorage), stValue)
+			}
+		}
+	}
+	end := time.Now()
 
-	// poll client for loaded block information
-	// t2 := time.Now()
-	// genesisHash, genesisResponse, err := getBlock(client.RPC(), "0x0")
-	// _, genesisResponse, err := getBlock(ethClient.RPC(), "0x0")
-	// if err != nil {
-		// t.Fatalf("can't get genesis: %v", err)
-	// }
-	// fmt.Print("genesisResponse: %v \n", genesisResponse)
-	// fmt.Print("Transactions: %v \n", tc.fixture.json.Blocks[0].Transactions)
-	// fmt.Print("Withdrawals: %v \n", tc.fixture.json.Blocks[0].Withdrawals)
-
-	// feed in blocks with engine API
-
-
-	// wantGenesis := tc.fixture.json.Genesis.Hash
-	// if !bytes.Equal(wantGenesis[:], genesisHash) {
-		// t.Errorf("genesis hash mismatch:\n  want 0x%x\n   got 0x%x", wantGenesis, genesisHash)
-		// if diffs, err := compareGenesis(genesisResponse, tc.fixture.json.Genesis); err == nil {
-			// t.Logf("Found differences: %v", diffs)
-		// }
-		// return
-	// }
-
-	// verify postconditions
-	// t3 := time.Now()
-	// lastHash, lastResponse, err := getBlock(client.RPC(), "latest")
-	// if err != nil {
-		// t.Fatal("can't get latest block:", err)
-	// }
-	// wantBest := tc.fixture.json.BestBlock
-	// if !bytes.Equal(wantBest[:], lastHash) {
-		// t.Errorf("last block hash mismatch:\n  want 0x%x\n   got 0x%x", wantBest, lastHash)
-		// t.Log("block response:", lastResponse)
-		// return
-	// }
-// 
-	// end := time.Now()
-	// t.Logf(`test timing:
- 		//  artefacts    %v
- 		//  startClient  %v
- 		//  checkGenesis %v
- 		//  checkLatest  %v`, t1.Sub(start), t2.Sub(t1), t3.Sub(t2), end.Sub(t3))
+	t.Logf(`HIVE END ---> Test Timing:
+			setupClientEnv %v
+ 			startClient %v
+ 			sendAllPayloads %v
+ 			setNewHeadOfChain %v
+			checkStorageValues %v
+			totalTestTime %v`, t0.Sub(start), t1.Sub(t0), t2.Sub(t1), t3.Sub(t2), end.Sub(t3), end.Sub(start))
 }
 
 // updateEnv sets environment variables from the test
 func (tc *testcase) updateEnv(env hivesim.Params) {
-	// Environment variables for rules.
-	rules := ruleset[tc.fixture.json.Network]
-	for k, v := range rules {
+	// environment variables for fork ruleset
+	forkRules := envForks[tc.fixture.json.Network]
+	for k, v := range forkRules {
 		env[k] = fmt.Sprintf("%d", v)
 	}
-	// Possibly disable POW.
-	if tc.fixture.json.SealEngine == "NoProof" {
-		env["HIVE_SKIP_POW"] = "1"
-	}
-}
-
-func getGenesis(test *fixtureJSON) (*core.Genesis){
-	genesis := &core.Genesis{
-		Nonce:      test.Genesis.Nonce.Uint64(),
-		Timestamp:  test.Genesis.Timestamp.Uint64(),
-		ExtraData:  test.Genesis.ExtraData,
-		GasLimit:   test.Genesis.GasLimit,
-		Difficulty: test.Genesis.Difficulty,
-		Mixhash:    test.Genesis.MixHash,
-		Coinbase:   test.Genesis.Coinbase,
-		BaseFee:    test.Genesis.BaseFee,
-		Alloc:      test.Pre,
-	}
-	return genesis
-}
-
-// -------------------------------------------------------------------------------------//
-// createArtefacts(): creates the genesisBlockHeader & blockRLPs artefacts from      //
-// a testcase within a fixture.json file. These are stored within the client container. //
-// -------------------------------------------------------------------------------------//
-func (tc *testcase) createArtefacts() (string, string, []string, error) {
-	// generate a unique key for testcase, use this to create root/blockDir.
-	key := fmt.Sprintf("%x", sha1.Sum([]byte(tc.filepath+tc.name)))
-	rootDir := filepath.Join(tc.clientType, key)
-	blockDir := filepath.Join(rootDir, "blocks")
-
-	// create and give blockDir directory permissions 0700.
-	if err := os.MkdirAll(blockDir, 0700); err != nil {
-		return "", "", nil, err
-	}
-
-	// extract certain tc.fixture.json fields into a geth genesis struct.
-	genesis := getGenesis(&tc.fixture.json) //todo
-
-
-	// reformat extracted genesis data and add it to a seperate json file, in rootDir.
-	genBytes, _ := json.Marshal(genesis)
-	genesisFile := filepath.Join(rootDir, "genesis.json")
-	if err := ioutil.WriteFile(genesisFile, genBytes, 0777); err != nil {
-		return rootDir, "", nil, fmt.Errorf("failed writing genesis: %v", err)
-	}
-
-	// write each block rlp to "blockDir/0001.rlp", ..., "blockDir/0010.rlp" in binary form.
-	var blockRLPs []string
-	for i, block := range tc.fixture.json.Blocks {
-		rlpData := common.FromHex(block.Rlp)
-		fname := fmt.Sprintf("%s/%04d.rlp", blockDir, i+1)
-		if err := ioutil.WriteFile(fname, rlpData, 0777); err != nil {
-			return rootDir, genesisFile, blockRLPs, fmt.Errorf("failed writing block %d: %v", i, err)
-		}
-		blockRLPs= append(blockRLPs, fname)
-	}
-
-	return rootDir, genesisFile, blockRLPs, nil
-}
-
-// getBlock fetches a block from the client under test.
-func getBlock(client *rpc.Client, arg string) (blockhash []byte, responseJSON string, err error) {
-	blockData := make(map[string]interface{})
-	if err := client.Call(&blockData, "eth_getBlockByNumber", arg, false); err != nil {
-		// Make one more attempt
-		fmt.Println("Client connect failed, making one more attempt...")
-		if err = client.Call(&blockData, "eth_getBlockByNumber", arg, false); err != nil {
-			return nil, "", err
-		}
-	}
-
-	// Capture all response data.
-	resp, _ := json.MarshalIndent(blockData, "", "  ")
-	responseJSON = string(resp)
-
-	hash, ok := blockData["hash"]
-	if !ok {
-		return nil, responseJSON, fmt.Errorf("no block hash found in response")
-	}
-	hexHash, ok := hash.(string)
-	if !ok {
-		return nil, responseJSON, fmt.Errorf("block hash in response is not a string: `%v`", hash)
-	}
-	return common.HexToHash(hexHash).Bytes(), responseJSON, nil
-}
-
-// compareGenesis is a helper utility to print out diffs in the genesis returned from the client,
-// and print out the differences found. This is to avoid gigantic outputs where 40K tests all
-// spit out all the fields.
-func compareGenesis(have string, want blockHeader) (string, error) {
-	var haveGenesis blockHeader
-	if err := json.Unmarshal([]byte(have), &haveGenesis); err != nil {
-		return "", err
-	}
-	output := ""
-	cmp := func(have, want interface{}, name string) {
-		if haveStr, wantStr := fmt.Sprintf("%v", have), fmt.Sprintf("%v", want); haveStr != wantStr {
-			output += fmt.Sprintf("genesis.%v - have %v, want %v \n", name, haveStr, wantStr)
-		}
-	}
-	// No need to output the hash difference -- it's already printed before entering here
-	//cmp(haveGenesis.Hash, want.Hash, "hash")
-	cmp(haveGenesis.MixHash, want.MixHash, "mixHash")
-	cmp(haveGenesis.ParentHash, want.ParentHash, "parentHash")
-	cmp(haveGenesis.ReceiptTrie, want.ReceiptTrie, "receiptsRoot")
-	cmp(haveGenesis.TransactionsTrie, want.TransactionsTrie, "transactionsRoot")
-	cmp(haveGenesis.UncleHash, want.UncleHash, "sha3Uncles")
-	cmp(haveGenesis.Bloom, want.Bloom, "bloom")
-	cmp(haveGenesis.Number, want.Number, "number")
-	cmp(haveGenesis.Coinbase, want.Coinbase, "miner")
-	cmp(haveGenesis.ExtraData, want.ExtraData, "extraData")
-	cmp(haveGenesis.Difficulty, want.Difficulty, "difficulty")
-	cmp(haveGenesis.Timestamp, want.Timestamp, "timestamp")
-	cmp(haveGenesis.BaseFee, want.BaseFee, "baseFeePerGas")
-	cmp(haveGenesis.GasLimit, want.GasLimit, "gasLimit")
-	cmp(haveGenesis.GasUsed, want.GasUsed, "gasused")
-	cmp(haveGenesis.WithdrawalsRoot, want.WithdrawalsRoot, "withdrawalsRoot")
-	return output, nil
 }
