@@ -153,6 +153,11 @@ if [ "$HIVE_TERMINAL_TOTAL_DIFFICULTY" != "" ]; then
     RPCFLAGS="$RPCFLAGS --engine-host-allowlist=* --engine-jwt-enabled --engine-jwt-secret /jwtsecret"
 fi
 
+# Enable kzg trusted setup post Cancun
+if [ "$HIVE_CANCUN_TIMESTAMP" != "" ]; then
+    FLAGS="$FLAGS --kzg-trusted-setup=/kzg.txt"
+fi
+
 # Start Besu.
 if [ -z "$HAS_IMPORT" ]; then
     cmd="$besu $FLAGS $RPCFLAGS"

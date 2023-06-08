@@ -27,6 +27,7 @@ RUN /opt/besu/bin/besu --version > /version.txt
 COPY genesis.json /genesis.json
 COPY mapper.jq /mapper.jq
 COPY besu.sh /opt/besu/bin/besu-hive.sh
+COPY trusted_setup.txt /kzg.txt
 COPY enode.sh /hive-bin/enode.sh
 
 # Set execute permissions for scripts
