@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
+	"math/big"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -12,6 +14,7 @@ import (
 
 	api "github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/hive/hivesim"
 	"github.com/ethereum/hive/simulators/ethereum/engine/client/hive_rpc"
 	"github.com/ethereum/hive/simulators/ethereum/engine/globals"
@@ -89,6 +92,7 @@ func (tc *testcase) run(t *hivesim.T) {
 	env := hivesim.Params{
 		"HIVE_FORK_DAO_VOTE": "1",
 		"HIVE_CHAIN_ID":      "1",
+		"HIVE_SKIP_POW":      "1",
 		"HIVE_NODETYPE":      "full",
 	}
 	tc.updateEnv(env)
@@ -105,25 +109,42 @@ func (tc *testcase) run(t *hivesim.T) {
 		tc.failedErr = err
 		t.Fatalf("can't start client with Engine API: %v", err)
 	}
+
+	// verify genesis fields from fixture
+	t.Logf("fixture genesis hash: %v", tc.fixture.json.Genesis.Hash)
+	t.Logf("hive struct genesis hash: %v", tc.genesis.ToBlock().Hash())
+	genesisBlock, err := engineClient.BlockByNumber(ctx, big.NewInt(0))
+	if genesisBlock.Hash() != tc.fixture.json.Genesis.Hash {
+		genhas, _ := json.MarshalIndent(genesisBlock.Header(), "", " ")
+		t.Logf("genesis hash mismatch:\nclient - %s\nfixture - %v", genhas, tc.fixture.json.Genesis.Hash)
+		t.Logf("genesis hash mismatch:\nclient - %v\nfixture - %v", genesisBlock.GasLimit(), tc.fixture.json.Genesis.GasLimit)
+		tc.failedErr = errors.New("genesis hash mismatch")
+		// findMismatch(t, genesisBlock, tc.fixture.json.Genesis)
+	}
+	t.Logf("client genesis hash: %v", genesisBlock.Hash())
+	t.Logf("client genesis hash: %v", genesisBlock.Hash())
 	t1 := time.Now()
 
 	// send payloads and check response
 	latestValidHash := common.Hash{}
 	for blockNumber, payload := range tc.payloads {
+		t.Logf("blockNumber: %v", blockNumber)
+		t.Logf("blobHashes: %v", tc.versionedHashes[blockNumber])
 		// set expected payload return status
 		plException := tc.fixture.json.Blocks[blockNumber].Exception
 		expectedStatus := "VALID"
 		if plException != "" {
 			expectedStatus = "INVALID"
 		}
-		// set NewPayload version
-		plVersion := 3
-		t.Logf("VersiondHashes %v:", tc.versionedHashes)
-		if tc.versionedHashes == nil {
+		// set NewPayload version TODO
+		plVersion := 1
+		if tc.fixture.json.Network == "Cancun" {
+			plVersion = 3
+		} else if tc.fixture.json.Network == "Shanghai" {
 			plVersion = 2
 		}
 		// execute fixture block payload
-		plStatus, plErr := engineClient.NewPayload(context.Background(), plVersion, payload, tc.versionedHashes)
+		plStatus, plErr := engineClient.NewPayload(context.Background(), plVersion, payload, tc.versionedHashes[blockNumber])
 		if plErr != nil {
 			if plException == plErr.Error() {
 				t.Logf("expected error caught by client: %v", plErr)
@@ -228,5 +249,23 @@ func (tc *testcase) updateEnv(env hivesim.Params) {
 	forkRules := envForks[tc.fixture.json.Network]
 	for k, v := range forkRules {
 		env[k] = fmt.Sprintf("%d", v)
+	}
+}
+
+func findMismatch(t *hivesim.T, clientGenesis *types.Block, fixtureGenesis blockHeader) {
+	if clientGenesis.ParentHash() != fixtureGenesis.ParentHash {
+		t.Fatalf("ParentHash mismatch: client - %v, fixture - %v", clientGenesis.ParentHash(), fixtureGenesis.ParentHash)
+	}
+	if clientGenesis.UncleHash() != fixtureGenesis.UncleHash {
+		t.Fatalf("UncleHash mismatch: client - %v, fixture - %v", clientGenesis.UncleHash(), fixtureGenesis.UncleHash)
+	}
+	if clientGenesis.Coinbase() != fixtureGenesis.Coinbase {
+		t.Fatalf("Coinbase mismatch: client - %v, fixture - %v", clientGenesis.Coinbase(), fixtureGenesis.Coinbase)
+	}
+	if clientGenesis.Root() != fixtureGenesis.StateRoot {
+		t.Fatalf("StateRoot mismatch: client - %v, fixture - %v", clientGenesis.Root(), fixtureGenesis.StateRoot)
+	}
+	if clientGenesis.Root() != fixtureGenesis.StateRoot {
+		t.Fatalf("StateRoot mismatch: client - %v, fixture - %v", clientGenesis.Root(), fixtureGenesis.StateRoot)
 	}
 }

@@ -5,9 +5,11 @@ FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 
 ARG github=nethermindeth/nethermind
 ARG tag=master
+ARG commit=991340417d80b6ce3f35b0a61d4f01a85cb1f92d
 
-RUN echo "Cloning: $user/$repo - $branch" && \
+RUN echo "Cloning: $github - $tag" && \
     git clone -b $tag https://github.com/$github && \
+    cd nethermind && git checkout $commit && \
     cd /nethermind/src/Nethermind/Nethermind.Runner && \
     dotnet build -c release
 

@@ -24,6 +24,7 @@ require (
 	github.com/crate-crypto/go-kzg-4844 v0.2.0 // indirect
 	github.com/deckarep/golang-set/v2 v2.1.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 // indirect
+	github.com/edsrzf/mmap-go v1.1.0 // indirect
 	github.com/getsentry/sentry-go v0.18.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
@@ -65,4 +66,4 @@ require (
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
 
-replace github.com/ethereum/go-ethereum v1.12.0 => github.com/marioevz/go-ethereum v1.10.14-0.20230607235252-075f62d72ccc
+replace github.com/ethereum/go-ethereum v1.12.0 => github.com/spencer-tb/go-ethereum v0.0.0-20230612150909-360f5e11d7e4
