@@ -400,7 +400,7 @@ func (cl *CLMocker) broadcastNextNewPayload() {
 	if cl.LatestBlobBundle != nil {
 		// Broadcast the blob bundle to all clients
 		var err error
-		versionedHashes, err = helper.VersionedHashesFromBlobBundle(cl.LatestBlobBundle, BLOB_COMMITMENT_VERSION_KZG)
+		versionedHashes, err = cl.LatestBlobBundle.VersionedHashes(BLOB_COMMITMENT_VERSION_KZG)
 		if err != nil {
 			cl.Fatalf("CLMocker: Could not get versioned hashes from blob bundle: %v", err)
 		}
