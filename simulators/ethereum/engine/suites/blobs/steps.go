@@ -128,6 +128,11 @@ type NewPayloads struct {
 	VersionedHashes *VersionedHashes
 	// Extra modifications on NewPayload to potentially generate an invalid payload
 	PayloadCustomizer helper.PayloadCustomizer
+	// Version to use to call NewPayload
+	Version uint64
+	// Expected responses on the NewPayload call
+	ExpectedError  *int
+	ExpectedStatus test.PayloadStatus
 }
 
 type VersionedHashes struct {
@@ -374,12 +379,21 @@ func (step NewPayloads) Execute(t *BlobTestContext) error {
 		t.CLMock.ProduceSingleBlock(clmock.BlockProcessCallbacks{
 			OnGetPayload: func() {
 				// Get the latest blob bundle
-				blobBundle := t.CLMock.LatestBlobBundle
+				var (
+					blobBundle = t.CLMock.LatestBlobBundle
+					payload    = &t.CLMock.LatestPayloadBuilt
+				)
+
+				if t.Env.Genesis.Config.CancunTime == nil {
+					panic("CancunTime is nil")
+				}
+				if payload.Timestamp < *t.Env.Genesis.Config.CancunTime {
+					// Nothing to do
+					return
+				}
 				if blobBundle == nil {
 					t.Fatalf("FAIL: Error getting blobs bundle (payload %d/%d): %v", p+1, payloadCount, blobBundle)
 				}
-
-				payload := &t.CLMock.LatestPayloadBuilt
 
 				_, blobDataInPayload, err := GetBlobDataInPayload(t.TestBlobTxPool, payload)
 				if err != nil {
@@ -391,9 +405,15 @@ func (step NewPayloads) Execute(t *BlobTestContext) error {
 				}
 			},
 			OnNewPayloadBroadcast: func() {
+				// Send a test NewPayload directive with either a modified payload or modifed versioned hashes
+				var (
+					payload         *engine.ExecutableData
+					versionedHashes []common.Hash
+					err             error
+				)
 				if step.VersionedHashes != nil {
 					// Send a new payload with the modified versioned hashes
-					versionedHashes, err := step.VersionedHashes.VersionedHashes()
+					versionedHashes, err = step.VersionedHashes.VersionedHashes()
 					if err != nil {
 						t.Fatalf("FAIL: Error getting modified versioned hashes (payload %d/%d): %v", p+1, payloadCount, err)
 					}
@@ -401,15 +421,41 @@ func (step NewPayloads) Execute(t *BlobTestContext) error {
 					// All tests that modify the versioned hashes expect an
 					// `INVALID` response, even if the client is out of sync
 					r.ExpectStatus(test.Invalid)
+				} else {
+					if t.CLMock.LatestBlobBundle != nil {
+						versionedHashes, err = t.CLMock.LatestBlobBundle.VersionedHashes(BLOB_COMMITMENT_VERSION_KZG)
+						if err != nil {
+							t.Fatalf("FAIL: Error getting versioned hashes (payload %d/%d): %v", p+1, payloadCount, err)
+						}
+					}
 				}
+
 				if step.PayloadCustomizer != nil {
 					// Send a custom new payload
-					customPayload, err := step.PayloadCustomizer.CustomizePayload(&t.CLMock.LatestPayloadBuilt)
+					payload, err = step.PayloadCustomizer.CustomizePayload(&t.CLMock.LatestPayloadBuilt)
 					if err != nil {
 						t.Fatalf("FAIL: Error customizing payload (payload %d/%d): %v", p+1, payloadCount, err)
 					}
-					r := t.TestEngine.TestEngineNewPayloadV3(customPayload, nil)
-					r.ExpectStatus(test.Invalid)
+				} else {
+					payload = &t.CLMock.LatestPayloadBuilt
+				}
+
+				var r *test.NewPayloadResponseExpectObject
+
+				if step.Version == 0 || step.Version == 3 {
+					r = t.TestEngine.TestEngineNewPayloadV3(payload, versionedHashes)
+				} else if step.Version == 2 {
+					r = t.TestEngine.TestEngineNewPayloadV2(payload)
+				} else {
+					t.Fatalf("FAIL: Unknown version %d", step.Version)
+				}
+				if step.ExpectedError != nil {
+					r.ExpectErrorCode(*step.ExpectedError)
+				} else {
+					r.ExpectNoError()
+					if step.ExpectedStatus != "" {
+						r.ExpectStatus(step.ExpectedStatus)
+					}
 				}
 			},
 			OnForkchoiceBroadcast: func() {
