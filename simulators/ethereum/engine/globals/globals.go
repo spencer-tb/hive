@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/hive/hivesim"
@@ -135,6 +136,18 @@ var (
 type ForkConfig struct {
 	ShanghaiTimestamp *big.Int
 	CancunTimestamp   *big.Int
+}
+
+func (f *ForkConfig) ConfigGenesis(genesis *core.Genesis) error {
+	if f.ShanghaiTimestamp != nil {
+		shanghaiTime := f.ShanghaiTimestamp.Uint64()
+		genesis.Config.ShanghaiTime = &shanghaiTime
+	}
+	if f.CancunTimestamp != nil {
+		cancunTime := f.CancunTimestamp.Uint64()
+		genesis.Config.CancunTime = &cancunTime
+	}
+	return nil
 }
 
 func (f *ForkConfig) IsShanghai(blockTimestamp uint64) bool {
