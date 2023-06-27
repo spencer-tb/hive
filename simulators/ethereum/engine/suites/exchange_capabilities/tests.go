@@ -50,6 +50,28 @@ var Tests = []test.SpecInterface{
 		},
 		MinimalExpectedCapabilitiesSet: ShanghaiCapabilities,
 	},
+
+	// Cancun
+	ExchangeCapabilitiesSpec{
+		Spec: test.Spec{
+			Name: "Exchange Capabilities - Cancun",
+			ForkConfig: globals.ForkConfig{
+				ShanghaiTimestamp: big.NewInt(0),
+				CancunTimestamp:   big.NewInt(0),
+			},
+		},
+		MinimalExpectedCapabilitiesSet: CancunCapabilities,
+	},
+	ExchangeCapabilitiesSpec{
+		Spec: test.Spec{
+			Name: "Exchange Capabilities - Cancun (Not active)",
+			ForkConfig: globals.ForkConfig{
+				ShanghaiTimestamp: big.NewInt(0),
+				CancunTimestamp:   big.NewInt(1000),
+			},
+		},
+		MinimalExpectedCapabilitiesSet: CancunCapabilities,
+	},
 }
 
 type ExchangeCapabilitiesSpec struct {
