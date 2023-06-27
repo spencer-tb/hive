@@ -3,6 +3,7 @@ module github.com/ethereum/hive/simulators/ethereum/engine
 go 1.20
 
 require (
+	github.com/crate-crypto/go-kzg-4844 v0.3.0
 	github.com/ethereum/go-ethereum v1.12.0
 	github.com/ethereum/hive v0.0.0-20230313141339-8e3200bfc09e
 	github.com/golang-jwt/jwt/v4 v4.4.3
@@ -26,7 +27,6 @@ require (
 	github.com/consensys/bavard v0.1.13 // indirect
 	github.com/consensys/gnark-crypto v0.10.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
-	github.com/crate-crypto/go-kzg-4844 v0.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/deckarep/golang-set/v2 v2.1.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 // indirect
