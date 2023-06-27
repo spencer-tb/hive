@@ -32,8 +32,8 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/hive/hivesim"
 	"github.com/ethereum/hive/simulators/ethereum/engine/client"
-	client_types "github.com/ethereum/hive/simulators/ethereum/engine/client/types"
 	"github.com/ethereum/hive/simulators/ethereum/engine/helper"
+	typ "github.com/ethereum/hive/simulators/ethereum/engine/types"
 )
 
 type GethNodeTestConfiguration struct {
@@ -161,10 +161,13 @@ type GethNode struct {
 
 	// Test specific configuration
 	accTxInfoMap                      map[common.Address]*AccountTransactionInfo
+	accTxInfoMapLock                  sync.Mutex
 	totalReceivedOrAnnouncedNewBlocks *big.Int
 
 	config GethNodeTestConfiguration
 }
+
+var _ client.EngineClient = (*GethNode)(nil)
 
 func newNode(config GethNodeTestConfiguration, bootnodes []string, genesis *core.Genesis) (*GethNode, error) {
 	// Define the basic configurations for the Ethereum node
@@ -430,10 +433,10 @@ func (n *GethNode) SetBlock(block *types.Block, parentNumber uint64, parentRoot 
 }
 
 // Engine API
-func (n *GethNode) NewPayload(ctx context.Context, version int, pl interface{}) (beacon.PayloadStatusV1, error) {
+func (n *GethNode) NewPayload(ctx context.Context, version int, pl interface{}, vh []common.Hash) (beacon.PayloadStatusV1, error) {
 	switch version {
 	case 1:
-		if c, ok := pl.(*client_types.ExecutableDataV1); ok {
+		if c, ok := pl.(*typ.ExecutableDataV1); ok {
 			return n.NewPayloadV1(ctx, c)
 		} else {
 			return beacon.PayloadStatusV1{}, fmt.Errorf("wrong type %T", pl)
@@ -444,22 +447,38 @@ func (n *GethNode) NewPayload(ctx context.Context, version int, pl interface{}) 
 		} else {
 			return beacon.PayloadStatusV1{}, fmt.Errorf("wrong type %T", pl)
 		}
+	case 3:
+		if c, ok := pl.(*beacon.ExecutableData); ok {
+			return n.NewPayloadV3(ctx, c, vh)
+		} else {
+			return beacon.PayloadStatusV1{}, fmt.Errorf("wrong type %T", pl)
+		}
 	}
 	return beacon.PayloadStatusV1{}, fmt.Errorf("unknown version %d", version)
 }
-func (n *GethNode) NewPayloadV1(ctx context.Context, pl *client_types.ExecutableDataV1) (beacon.PayloadStatusV1, error) {
+
+func (n *GethNode) NewPayloadV1(ctx context.Context, pl *typ.ExecutableDataV1) (beacon.PayloadStatusV1, error) {
 	ed := pl.ToExecutableData()
 	n.latestPayloadSent = &ed
 	resp, err := n.api.NewPayloadV1(ed)
 	n.latestPayloadStatusReponse = &resp
 	return resp, err
 }
+
 func (n *GethNode) NewPayloadV2(ctx context.Context, pl *beacon.ExecutableData) (beacon.PayloadStatusV1, error) {
 	n.latestPayloadSent = pl
 	resp, err := n.api.NewPayloadV2(*pl)
 	n.latestPayloadStatusReponse = &resp
 	return resp, err
 }
+
+func (n *GethNode) NewPayloadV3(ctx context.Context, pl *beacon.ExecutableData, versionedHashes []common.Hash) (beacon.PayloadStatusV1, error) {
+	n.latestPayloadSent = pl
+	resp, err := n.api.NewPayloadV3(*pl, versionedHashes)
+	n.latestPayloadStatusReponse = &resp
+	return resp, err
+}
+
 func (n *GethNode) ForkchoiceUpdated(ctx context.Context, version int, fcs *beacon.ForkchoiceStateV1, payload *beacon.PayloadAttributes) (beacon.ForkChoiceResponse, error) {
 	switch version {
 	case 1:
@@ -502,11 +521,23 @@ func (n *GethNode) GetPayloadV2(ctx context.Context, payloadId *beacon.PayloadID
 	return *p.ExecutionPayload, p.BlockValue, err
 }
 
-func (n *GethNode) GetPayloadBodiesByRangeV1(ctx context.Context, start uint64, count uint64) ([]*client_types.ExecutionPayloadBodyV1, error) {
+func (n *GethNode) GetPayloadV3(ctx context.Context, payloadId *beacon.PayloadID) (beacon.ExecutableData, *big.Int, *typ.BlobsBundle, error) {
+	p, err := n.api.GetPayloadV3(*payloadId)
+	if p == nil || err != nil {
+		return beacon.ExecutableData{}, nil, nil, err
+	}
+	return *p.ExecutionPayload, p.BlockValue, nil, err
+}
+
+func (n *GethNode) GetPayloadBodiesByRangeV1(ctx context.Context, start uint64, count uint64) ([]*typ.ExecutionPayloadBodyV1, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (n *GethNode) GetPayloadBodiesByHashV1(ctx context.Context, hashes []common.Hash) ([]*client_types.ExecutionPayloadBodyV1, error) {
+func (n *GethNode) GetPayloadBodiesByHashV1(ctx context.Context, hashes []common.Hash) ([]*typ.ExecutionPayloadBodyV1, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (n *GethNode) GetBlobsBundleV1(ctx context.Context, payloadId *beacon.PayloadID) (*typ.BlobsBundle, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
@@ -553,16 +584,24 @@ func (n *GethNode) HeaderByNumber(ctx context.Context, number *big.Int) (*types.
 	return b.Header(), err
 }
 
-func (n *GethNode) SendTransaction(ctx context.Context, tx *types.Transaction) error {
-	return n.eth.APIBackend.SendTx(ctx, tx)
+func (n *GethNode) SendTransaction(ctx context.Context, tx typ.Transaction) error {
+	if v, ok := tx.(*types.Transaction); ok {
+		return n.eth.APIBackend.SendTx(ctx, v)
+	}
+	return fmt.Errorf("invalid transaction type")
 }
 
-func (n *GethNode) SendTransactions(ctx context.Context, txs []*types.Transaction) []error {
+func (n *GethNode) SendTransactions(ctx context.Context, txs ...typ.Transaction) []error {
 	for _, tx := range txs {
-		err := n.eth.APIBackend.SendTx(ctx, tx)
-		if err != nil {
-			return []error{err}
+		if v, ok := tx.(*types.Transaction); ok {
+			err := n.eth.APIBackend.SendTx(ctx, v)
+			if err != nil {
+				return []error{err}
+			}
+		} else {
+			return []error{fmt.Errorf("invalid transaction type")}
 		}
+
 	}
 	return nil
 }
@@ -611,6 +650,10 @@ func (n *GethNode) TransactionByHash(ctx context.Context, hash common.Hash) (tx 
 	panic("NOT IMPLEMENTED")
 }
 
+func (n *GethNode) PendingTransactionCount(ctx context.Context) (uint, error) {
+	panic("NOT IMPLEMENTED")
+}
+
 func (n *GethNode) GetBlockTotalDifficulty(ctx context.Context, hash common.Hash) (*big.Int, error) {
 	block := n.eth.BlockChain().GetBlockByHash(hash)
 	if block == nil {
@@ -641,6 +684,23 @@ func (n *GethNode) ID() string {
 	return n.node.Config().Name
 }
 
+func (n *GethNode) GetLastAccountNonce(testCtx context.Context, account common.Address) (uint64, error) {
+	// First get the current head of the client where we will send the tx
+	head, err := n.eth.APIBackend.BlockByNumber(testCtx, rpc.LatestBlockNumber)
+	if err != nil {
+		return 0, err
+	}
+
+	// Then check if we have any info about this account, and when it was last updated
+	if accTxInfo, ok := n.accTxInfoMap[account]; ok && accTxInfo != nil && (accTxInfo.PreviousBlock == head.Hash() || accTxInfo.PreviousBlock == head.ParentHash()) {
+		// We have info about this account and is up to date (or up to date until the very last block).
+		// Return the previous nonce
+		return accTxInfo.PreviousNonce, nil
+	}
+	// We don't have info about this account, so there is no previous nonce
+	return 0, fmt.Errorf("no previous nonce for account %s", account.String())
+}
+
 func (n *GethNode) GetNextAccountNonce(testCtx context.Context, account common.Address) (uint64, error) {
 	// First get the current head of the client where we will send the tx
 	head, err := n.eth.APIBackend.BlockByNumber(testCtx, rpc.LatestBlockNumber)
@@ -660,6 +720,8 @@ func (n *GethNode) GetNextAccountNonce(testCtx context.Context, account common.A
 	if err != nil {
 		return 0, err
 	}
+	n.accTxInfoMapLock.Lock()
+	defer n.accTxInfoMapLock.Unlock()
 	n.accTxInfoMap[account] = &AccountTransactionInfo{
 		PreviousBlock: head.Hash(),
 		PreviousNonce: nonce,
