@@ -85,6 +85,8 @@ func addTestsToSuite(sim *hivesim.Simulation, suite *hivesim.Suite, tests []test
 
 		// Load the genesis file specified and dynamically bundle it.
 		genesis := currentTest.GetGenesis()
+		forkConfig := currentTest.GetForkConfig()
+		forkConfig.ConfigGenesis(genesis)
 		genesisStartOption, err := helper.GenesisStartOption(genesis)
 		if err != nil {
 			panic("unable to inject genesis")
@@ -95,12 +97,12 @@ func addTestsToSuite(sim *hivesim.Simulation, suite *hivesim.Suite, tests []test
 
 		// Configure Forks
 		newParams := globals.DefaultClientEnv.Set("HIVE_TERMINAL_TOTAL_DIFFICULTY", fmt.Sprintf("%d", ttd))
-		if currentTest.GetForkConfig().ShanghaiTimestamp != nil {
-			newParams = newParams.Set("HIVE_SHANGHAI_TIMESTAMP", fmt.Sprintf("%d", currentTest.GetForkConfig().ShanghaiTimestamp))
+		if forkConfig.ShanghaiTimestamp != nil {
+			newParams = newParams.Set("HIVE_SHANGHAI_TIMESTAMP", fmt.Sprintf("%d", forkConfig.ShanghaiTimestamp))
 			// Ensure the merge transition is activated before shanghai.
 			newParams = newParams.Set("HIVE_MERGE_BLOCK_ID", "0")
-			if currentTest.GetForkConfig().CancunTimestamp != nil {
-				newParams = newParams.Set("HIVE_CANCUN_TIMESTAMP", fmt.Sprintf("%d", currentTest.GetForkConfig().CancunTimestamp))
+			if forkConfig.CancunTimestamp != nil {
+				newParams = newParams.Set("HIVE_CANCUN_TIMESTAMP", fmt.Sprintf("%d", forkConfig.CancunTimestamp))
 			}
 		}
 
