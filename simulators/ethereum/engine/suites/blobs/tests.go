@@ -38,6 +38,10 @@ func pUint64(v uint64) *uint64 {
 	return &v
 }
 
+func pInt(v int) *int {
+	return &v
+}
+
 // Execution specification reference:
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md
 
@@ -506,6 +510,52 @@ var Tests = []test.SpecInterface{
 			},
 		},
 	},
+	// NewPayload Version Negative Tests
+	&BlobsBaseSpec{
+
+		Spec: test.Spec{
+			Name: "NewPayloadV2 After Cancun",
+			About: `
+			Test sending NewPayloadV2 after cancun fork, which
+			should result in error.
+			`,
+		},
+
+		// We fork on genesis
+		CancunForkHeight: 0,
+
+		TestSequence: TestSequence{
+			// Send multiple blob transactions with the same nonce.
+			NewPayloads{
+				ExpectedIncludedBlobCount: 0,
+				Version:                   2,
+				ExpectedError:             pInt(-38005),
+			},
+		},
+	},
+	&BlobsBaseSpec{
+
+		Spec: test.Spec{
+			Name: "NewPayloadV3 Before Cancun",
+			About: `
+			Test sending NewPayloadV3 before cancun fork, which
+			should result in error.
+			`,
+		},
+
+		// We fork on genesis
+		CancunForkHeight: 2,
+
+		TestSequence: TestSequence{
+			// Send multiple blob transactions with the same nonce.
+			NewPayloads{
+				ExpectedIncludedBlobCount: 0,
+				Version:                   3,
+				ExpectedError:             pInt(-38005),
+			},
+		},
+	},
+
 	// Test versioned hashes in Engine API NewPayloadV3
 	&BlobsBaseSpec{
 
@@ -527,6 +577,7 @@ var Tests = []test.SpecInterface{
 				VersionedHashes: &VersionedHashes{
 					Blobs: helper.GetBlobList(0, TARGET_BLOBS_PER_BLOCK-1),
 				},
+				ExpectedStatus: test.Invalid,
 			},
 		},
 	},
@@ -552,6 +603,7 @@ var Tests = []test.SpecInterface{
 				VersionedHashes: &VersionedHashes{
 					Blobs: helper.GetBlobList(0, TARGET_BLOBS_PER_BLOCK+1),
 				},
+				ExpectedStatus: test.Invalid,
 			},
 		},
 	},
@@ -575,6 +627,7 @@ var Tests = []test.SpecInterface{
 				VersionedHashes: &VersionedHashes{
 					Blobs: helper.GetBlobListByIndex(helper.BlobID(TARGET_BLOBS_PER_BLOCK-1), 0),
 				},
+				ExpectedStatus: test.Invalid,
 			},
 		},
 	},
@@ -598,6 +651,7 @@ var Tests = []test.SpecInterface{
 				VersionedHashes: &VersionedHashes{
 					Blobs: append(helper.GetBlobList(0, TARGET_BLOBS_PER_BLOCK), helper.BlobID(TARGET_BLOBS_PER_BLOCK-1)),
 				},
+				ExpectedStatus: test.Invalid,
 			},
 		},
 	},
@@ -621,6 +675,7 @@ var Tests = []test.SpecInterface{
 				VersionedHashes: &VersionedHashes{
 					Blobs: append(helper.GetBlobList(0, TARGET_BLOBS_PER_BLOCK-1), helper.BlobID(TARGET_BLOBS_PER_BLOCK)),
 				},
+				ExpectedStatus: test.Invalid,
 			},
 		},
 	},
@@ -644,6 +699,7 @@ var Tests = []test.SpecInterface{
 					Blobs:        helper.GetBlobList(0, TARGET_BLOBS_PER_BLOCK),
 					HashVersions: []byte{BLOB_COMMITMENT_VERSION_KZG, BLOB_COMMITMENT_VERSION_KZG + 1},
 				},
+				ExpectedStatus: test.Invalid,
 			},
 		},
 	},
@@ -667,6 +723,7 @@ var Tests = []test.SpecInterface{
 				VersionedHashes: &VersionedHashes{
 					Blobs: nil,
 				},
+				ExpectedStatus: test.Invalid,
 			},
 		},
 	},
@@ -690,6 +747,7 @@ var Tests = []test.SpecInterface{
 				VersionedHashes: &VersionedHashes{
 					Blobs: []helper.BlobID{},
 				},
+				ExpectedStatus: test.Invalid,
 			},
 		},
 	},
@@ -709,6 +767,7 @@ var Tests = []test.SpecInterface{
 				VersionedHashes: &VersionedHashes{
 					Blobs: []helper.BlobID{0},
 				},
+				ExpectedStatus: test.Invalid,
 			},
 		},
 	},
@@ -719,9 +778,9 @@ var Tests = []test.SpecInterface{
 		Spec: test.Spec{
 			Name: "NewPayloadV3 Versioned Hashes, Missing Hash (Syncing)",
 			About: `
-			Tests VersionedHashes in Engine API NewPayloadV3 where the array
-			is missing one of the hashes.
-			`,
+				Tests VersionedHashes in Engine API NewPayloadV3 where the array
+				is missing one of the hashes.
+				`,
 		},
 		TestSequence: TestSequence{
 			NewPayloads{}, // Send new payload so the parent is unknown to the secondary client
