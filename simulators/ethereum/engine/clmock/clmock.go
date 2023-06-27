@@ -103,21 +103,13 @@ type CLMocker struct {
 	SafeSlotsToImportOptimistically *big.Int
 
 	// Fork configuration
-	globals.ForkConfig
+	*globals.ForkConfig
 
 	NextWithdrawals types.Withdrawals
 
 	// Global context which all procedures shall stop
 	TestContext    context.Context
 	TimeoutContext context.Context
-}
-
-func isShanghai(blockTimestamp uint64, shanghaiTimestamp *big.Int) bool {
-	return shanghaiTimestamp != nil && big.NewInt(int64(blockTimestamp)).Cmp(shanghaiTimestamp) >= 0
-}
-
-func isCancun(blockTimestamp uint64, cancunTimestamp *big.Int) bool {
-	return cancunTimestamp != nil && big.NewInt(int64(blockTimestamp)).Cmp(cancunTimestamp) >= 0
 }
 
 func NewCLMocker(t *hivesim.T, slotsToSafe, slotsToFinalized, safeSlotsToImportOptimistically *big.Int, forkConfig globals.ForkConfig) *CLMocker {
@@ -154,7 +146,7 @@ func NewCLMocker(t *hivesim.T, slotsToSafe, slotsToFinalized, safeSlotsToImportO
 			SafeBlockHash:      common.Hash{},
 			FinalizedBlockHash: common.Hash{},
 		},
-		ForkConfig:  forkConfig,
+		ForkConfig:  &forkConfig,
 		TestContext: context.Background(),
 	}
 
@@ -334,7 +326,7 @@ func (cl *CLMocker) RequestNextPayload() {
 		Timestamp:             cl.GetNextBlockTimestamp(),
 	}
 
-	if isShanghai(cl.LatestPayloadAttributes.Timestamp, cl.ShanghaiTimestamp) && cl.NextWithdrawals != nil {
+	if cl.IsShanghai(cl.LatestPayloadAttributes.Timestamp) && cl.NextWithdrawals != nil {
 		cl.LatestPayloadAttributes.Withdrawals = cl.NextWithdrawals
 	}
 
@@ -348,7 +340,7 @@ func (cl *CLMocker) RequestNextPayload() {
 		fcUVersion int
 		err        error
 	)
-	if isShanghai(cl.LatestPayloadAttributes.Timestamp, cl.ShanghaiTimestamp) {
+	if cl.IsShanghai(cl.LatestPayloadAttributes.Timestamp) {
 		fcUVersion = 2
 		resp, err = cl.NextBlockProducer.ForkchoiceUpdatedV2(ctx, &cl.LatestForkchoice, &cl.LatestPayloadAttributes)
 
@@ -372,9 +364,9 @@ func (cl *CLMocker) GetNextPayload() {
 	var err error
 	ctx, cancel := context.WithTimeout(cl.TestContext, globals.RPCTimeout)
 	defer cancel()
-	if isCancun(cl.LatestPayloadAttributes.Timestamp, cl.CancunTimestamp) {
+	if cl.IsCancun(cl.LatestPayloadAttributes.Timestamp) {
 		cl.LatestPayloadBuilt, cl.LatestBlockValue, cl.LatestBlobBundle, err = cl.NextBlockProducer.GetPayloadV3(ctx, cl.NextPayloadID)
-	} else if isShanghai(cl.LatestPayloadAttributes.Timestamp, cl.ShanghaiTimestamp) {
+	} else if cl.IsShanghai(cl.LatestPayloadAttributes.Timestamp) {
 		cl.LatestPayloadBuilt, cl.LatestBlockValue, err = cl.NextBlockProducer.GetPayloadV2(ctx, cl.NextPayloadID)
 		cl.LatestBlobBundle = nil
 	} else {
@@ -415,7 +407,7 @@ func (cl *CLMocker) broadcastNextNewPayload() {
 	}
 	// Broadcast the executePayload to all clients
 	responses := cl.BroadcastNewPayload(&cl.LatestPayloadBuilt, versionedHashes)
-	acceptedPayloads := 0
+	validations := 0
 	for _, resp := range responses {
 		if resp.Error != nil {
 			cl.Logf("CLMocker: BroadcastNewPayload Error (%v): %v\n", resp.Container, resp.Error)
@@ -430,7 +422,7 @@ func (cl *CLMocker) broadcastNextNewPayload() {
 				if *resp.ExecutePayloadResponse.LatestValidHash != cl.LatestPayloadBuilt.BlockHash {
 					cl.Fatalf("CLMocker: NewPayload returned VALID status with incorrect LatestValidHash==%v, expected %v", resp.ExecutePayloadResponse.LatestValidHash, cl.LatestPayloadBuilt.BlockHash)
 				}
-				acceptedPayloads += 1
+				validations += 1
 			} else if resp.ExecutePayloadResponse.Status == api.ACCEPTED {
 				// The client is not synced but the payload was accepted
 				// https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md:
@@ -446,8 +438,8 @@ func (cl *CLMocker) broadcastNextNewPayload() {
 			}
 		}
 	}
-	if acceptedPayloads == 0 {
-		cl.Fatalf("CLMocker: No clients accepted the payload")
+	if validations == 0 {
+		cl.Fatalf("CLMocker: No clients validated the payload")
 	}
 	cl.LatestExecutedPayload = cl.LatestPayloadBuilt
 	payload := cl.LatestPayloadBuilt
@@ -456,7 +448,7 @@ func (cl *CLMocker) broadcastNextNewPayload() {
 
 func (cl *CLMocker) broadcastLatestForkchoice() {
 	version := 1
-	if isShanghai(cl.LatestExecutedPayload.Timestamp, cl.ShanghaiTimestamp) {
+	if cl.IsShanghai(cl.LatestExecutedPayload.Timestamp) {
 		version = 2
 	}
 	for _, resp := range cl.BroadcastForkchoiceUpdated(&cl.LatestForkchoice, nil, version) {
@@ -637,9 +629,9 @@ func (cl *CLMocker) BroadcastNewPayload(payload *api.ExecutableData, versionedHa
 			execPayloadResp api.PayloadStatusV1
 			err             error
 		)
-		if isCancun(payload.Timestamp, cl.CancunTimestamp) {
+		if cl.IsCancun(payload.Timestamp) {
 			execPayloadResp, err = ec.NewPayloadV3(ctx, payload, versionedHashes)
-		} else if isShanghai(payload.Timestamp, cl.ShanghaiTimestamp) {
+		} else if cl.IsShanghai(payload.Timestamp) {
 			execPayloadResp, err = ec.NewPayloadV2(ctx, payload)
 		} else {
 			edv1 := &typ.ExecutableDataV1{}
