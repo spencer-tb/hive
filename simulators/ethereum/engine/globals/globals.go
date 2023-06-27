@@ -136,3 +136,11 @@ type ForkConfig struct {
 	ShanghaiTimestamp *big.Int
 	CancunTimestamp   *big.Int
 }
+
+func (f *ForkConfig) IsShanghai(blockTimestamp uint64) bool {
+	return f.ShanghaiTimestamp != nil && new(big.Int).SetUint64(blockTimestamp).Cmp(f.ShanghaiTimestamp) >= 0
+}
+
+func (f *ForkConfig) IsCancun(blockTimestamp uint64) bool {
+	return f.CancunTimestamp != nil && new(big.Int).SetUint64(blockTimestamp).Cmp(f.CancunTimestamp) >= 0
+}
