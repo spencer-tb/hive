@@ -41,6 +41,7 @@ type Env struct {
 
 	// Client parameters used to launch the default client
 	Genesis      *core.Genesis
+	ForkConfig   *globals.ForkConfig
 	ClientParams hivesim.Params
 	ClientFiles  hivesim.Params
 
@@ -48,7 +49,7 @@ type Env struct {
 	TestTransactionType helper.TestTransactionType
 }
 
-func Run(testSpec SpecInterface, ttd *big.Int, timeout time.Duration, t *hivesim.T, c *hivesim.Client, genesis *core.Genesis, cParams hivesim.Params, cFiles hivesim.Params) {
+func Run(testSpec SpecInterface, ttd *big.Int, timeout time.Duration, t *hivesim.T, c *hivesim.Client, genesis *core.Genesis, forkConfig *globals.ForkConfig, cParams hivesim.Params, cFiles hivesim.Params) {
 	// Setup the CL Mocker for this test
 	consensusConfig := testSpec.GetConsensusConfig()
 	clMocker := clmock.NewCLMocker(
@@ -87,6 +88,7 @@ func Run(testSpec SpecInterface, ttd *big.Int, timeout time.Duration, t *hivesim
 		HiveEngine:          ec,
 		CLMock:              clMocker,
 		Genesis:             genesis,
+		ForkConfig:          forkConfig,
 		ClientParams:        cParams,
 		ClientFiles:         cFiles,
 		TestTransactionType: testSpec.GetTestTransactionType(),
