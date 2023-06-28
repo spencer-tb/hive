@@ -163,6 +163,7 @@ func addTestsToSuite(sim *hivesim.Simulation, suite *hivesim.Suite, tests []test
 							t,
 							c,
 							genesis,
+							&forkConfig,
 							newParams,
 							testFiles,
 						)
