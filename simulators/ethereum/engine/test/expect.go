@@ -14,8 +14,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/hive/simulators/ethereum/engine/client"
-	client_types "github.com/ethereum/hive/simulators/ethereum/engine/client/types"
 	"github.com/ethereum/hive/simulators/ethereum/engine/globals"
+	typ "github.com/ethereum/hive/simulators/ethereum/engine/types"
 )
 
 // Print the caller to this file
@@ -218,7 +218,7 @@ type NewPayloadResponseExpectObject struct {
 func (tec *TestEngineClient) TestEngineNewPayloadV1(payload *api.ExecutableData) *NewPayloadResponseExpectObject {
 	ctx, cancel := context.WithTimeout(tec.TestContext, globals.RPCTimeout)
 	defer cancel()
-	edv1 := &client_types.ExecutableDataV1{}
+	edv1 := &typ.ExecutableDataV1{}
 	edv1.FromExecutableData(payload)
 	status, err := tec.Engine.NewPayloadV1(ctx, edv1)
 	ret := &NewPayloadResponseExpectObject{
@@ -243,6 +243,23 @@ func (tec *TestEngineClient) TestEngineNewPayloadV2(payload *api.ExecutableData)
 		Payload:   payload,
 		Status:    status,
 		Version:   2,
+		Error:     err,
+	}
+	if err, ok := err.(rpc.Error); ok {
+		ret.ErrorCode = err.ErrorCode()
+	}
+	return ret
+}
+
+func (tec *TestEngineClient) TestEngineNewPayloadV3(payload *api.ExecutableData, versionedHashes []common.Hash) *NewPayloadResponseExpectObject {
+	ctx, cancel := context.WithTimeout(tec.TestContext, globals.RPCTimeout)
+	defer cancel()
+	status, err := tec.Engine.NewPayloadV3(ctx, payload, versionedHashes)
+	ret := &NewPayloadResponseExpectObject{
+		ExpectEnv: &ExpectEnv{Env: tec.Env},
+		Payload:   payload,
+		Status:    status,
+		Version:   3,
 		Error:     err,
 	}
 	if err, ok := err.(rpc.Error); ok {
@@ -493,7 +510,7 @@ func (exp *GetPayloadResponseExpectObject) ExpectTimestamp(expectedTimestamp uin
 // GetPayloadBodies
 type GetPayloadBodiesResponseExpectObject struct {
 	*ExpectEnv
-	PayloadBodies []*client_types.ExecutionPayloadBodyV1
+	PayloadBodies []*typ.ExecutionPayloadBodyV1
 	BlockValue    *big.Int
 	Version       int
 	Error         error
@@ -630,7 +647,7 @@ func CompareWithdrawals(want []*types.Withdrawal, got []*types.Withdrawal) error
 	return nil
 }
 
-func ComparePayloadBodies(want *client_types.ExecutionPayloadBodyV1, got *client_types.ExecutionPayloadBodyV1) error {
+func ComparePayloadBodies(want *typ.ExecutionPayloadBodyV1, got *typ.ExecutionPayloadBodyV1) error {
 	if want == nil || got == nil {
 		if want == nil && got == nil {
 			return nil
@@ -649,7 +666,7 @@ func ComparePayloadBodies(want *client_types.ExecutionPayloadBodyV1, got *client
 	return nil
 }
 
-func (exp *GetPayloadBodiesResponseExpectObject) ExpectPayloadBody(index uint64, payloadBody *client_types.ExecutionPayloadBodyV1) {
+func (exp *GetPayloadBodiesResponseExpectObject) ExpectPayloadBody(index uint64, payloadBody *typ.ExecutionPayloadBodyV1) {
 	exp.ExpectNoError()
 	if exp.PayloadBodies == nil {
 		exp.Fatalf("FAIL (%s): Expected payload body in list on EngineGetPayloadBodiesV%d, but list is nil", exp.TestName, exp.Version)
@@ -1015,5 +1032,23 @@ func (exp *TransactionReceiptExpectObject) ExpectBlockHash(expectedHash common.H
 	exp.ExpectNoError()
 	if exp.Receipt.BlockHash != expectedHash {
 		exp.Fatalf("FAIL (%s): Unexpected transaction block hash on %s: %v, blockhash=%v, expected=%v", exp.TestName, exp.Call, exp.Receipt.TxHash, exp.Receipt.BlockHash, expectedHash)
+	}
+}
+
+func (exp *TransactionReceiptExpectObject) ExpectDataGasUsed(expectedDataGasUsed *uint64) {
+	exp.ExpectNoError()
+	if (expectedDataGasUsed == nil || exp.Receipt.DataGasUsed == nil) && expectedDataGasUsed != exp.Receipt.DataGasUsed {
+		exp.Fatalf("FAIL (%s): Unexpected transaction data gas used on %s: %v, dataGasUsed=%v, expected=%v", exp.TestName, exp.Call, exp.Receipt.TxHash, exp.Receipt.DataGasUsed, expectedDataGasUsed)
+	} else if expectedDataGasUsed != nil && exp.Receipt.DataGasUsed != nil && *expectedDataGasUsed != *exp.Receipt.DataGasUsed {
+		exp.Fatalf("FAIL (%s): Unexpected transaction data gas used on %s: %v, dataGasUsed=0x%x, expected=0x%x", exp.TestName, exp.Call, exp.Receipt.TxHash, *exp.Receipt.DataGasUsed, *expectedDataGasUsed)
+	}
+}
+
+func (exp *TransactionReceiptExpectObject) ExpectDataGasPrice(expectedDataGasPrice *uint64) {
+	exp.ExpectNoError()
+	if (expectedDataGasPrice == nil || exp.Receipt.DataGasPrice == nil) && expectedDataGasPrice != exp.Receipt.DataGasPrice {
+		exp.Fatalf("FAIL (%s): Unexpected transaction data gas price on %s: %v, DataGasPrice=%v, expected=%v", exp.TestName, exp.Call, exp.Receipt.TxHash, exp.Receipt.DataGasPrice, expectedDataGasPrice)
+	} else if expectedDataGasPrice != nil && exp.Receipt.DataGasPrice != nil && *expectedDataGasPrice != *exp.Receipt.DataGasPrice {
+		exp.Fatalf("FAIL (%s): Unexpected transaction data gas price on %s: %v, DataGasPrice=0x%x, expected=0x%x", exp.TestName, exp.Call, exp.Receipt.TxHash, *exp.Receipt.DataGasPrice, *expectedDataGasPrice)
 	}
 }
