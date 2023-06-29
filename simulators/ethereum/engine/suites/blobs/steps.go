@@ -253,11 +253,10 @@ func GetBlobDataInPayload(pool *TestBlobTxPool, payload *engine.ExecutableData) 
 	return blobTxsInPayload, blobDataInPayload, nil
 }
 
-func (step NewPayloads) VerifyPayload(ctx context.Context, testEngine *test.TestEngineClient, blobTxsInPayload []*typ.TransactionWithBlobData, payload *engine.ExecutableData, previousPayload *engine.ExecutableData) error {
+func (step NewPayloads) VerifyPayload(ctx context.Context, forkConfig *globals.ForkConfig, testEngine *test.TestEngineClient, blobTxsInPayload []*typ.TransactionWithBlobData, payload *engine.ExecutableData, previousPayload *engine.ExecutableData) error {
 	var (
 		parentExcessDataGas = uint64(0)
 		parentDataGasUsed   = uint64(0)
-		isCancunYet         = true
 	)
 	if previousPayload != nil {
 		if previousPayload.ExcessDataGas != nil {
@@ -270,7 +269,7 @@ func (step NewPayloads) VerifyPayload(ctx context.Context, testEngine *test.Test
 	expectedExcessDataGas := CalcExcessDataGas(parentExcessDataGas, parentDataGasUsed)
 
 	// TODO: check whether the new payload should be in cancun or not
-	if isCancunYet {
+	if forkConfig.IsCancun(payload.Timestamp) {
 		if payload.ExcessDataGas == nil {
 			return fmt.Errorf("payload contains nil excessDataGas")
 		}
@@ -384,10 +383,7 @@ func (step NewPayloads) Execute(t *BlobTestContext) error {
 					payload    = &t.CLMock.LatestPayloadBuilt
 				)
 
-				if t.Env.Genesis.Config.CancunTime == nil {
-					panic("CancunTime is nil")
-				}
-				if payload.Timestamp < *t.Env.Genesis.Config.CancunTime {
+				if !t.Env.ForkConfig.IsCancun(payload.Timestamp) {
 					// Nothing to do
 					return
 				}
@@ -407,8 +403,9 @@ func (step NewPayloads) Execute(t *BlobTestContext) error {
 			OnNewPayloadBroadcast: func() {
 				// Send a test NewPayload directive with either a modified payload or modifed versioned hashes
 				var (
-					payload         *engine.ExecutableData
-					versionedHashes []common.Hash
+					payload                       = &t.CLMock.LatestPayloadBuilt
+					versionedHashes []common.Hash = nil
+					r               *test.NewPayloadResponseExpectObject
 					err             error
 				)
 				if step.VersionedHashes != nil {
@@ -417,10 +414,6 @@ func (step NewPayloads) Execute(t *BlobTestContext) error {
 					if err != nil {
 						t.Fatalf("FAIL: Error getting modified versioned hashes (payload %d/%d): %v", p+1, payloadCount, err)
 					}
-					r := t.TestEngine.TestEngineNewPayloadV3(&t.CLMock.LatestPayloadBuilt, versionedHashes)
-					// All tests that modify the versioned hashes expect an
-					// `INVALID` response, even if the client is out of sync
-					r.ExpectStatus(test.Invalid)
 				} else {
 					if t.CLMock.LatestBlobBundle != nil {
 						versionedHashes, err = t.CLMock.LatestBlobBundle.VersionedHashes(BLOB_COMMITMENT_VERSION_KZG)
@@ -432,19 +425,24 @@ func (step NewPayloads) Execute(t *BlobTestContext) error {
 
 				if step.PayloadCustomizer != nil {
 					// Send a custom new payload
-					payload, err = step.PayloadCustomizer.CustomizePayload(&t.CLMock.LatestPayloadBuilt)
+					payload, err = step.PayloadCustomizer.CustomizePayload(payload)
 					if err != nil {
 						t.Fatalf("FAIL: Error customizing payload (payload %d/%d): %v", p+1, payloadCount, err)
 					}
-				} else {
-					payload = &t.CLMock.LatestPayloadBuilt
 				}
 
-				var r *test.NewPayloadResponseExpectObject
+				version := step.Version
+				if version == 0 {
+					if t.Env.ForkConfig.IsCancun(payload.Timestamp) {
+						version = 3
+					} else {
+						version = 2
+					}
+				}
 
-				if step.Version == 0 || step.Version == 3 {
+				if version == 3 {
 					r = t.TestEngine.TestEngineNewPayloadV3(payload, versionedHashes)
-				} else if step.Version == 2 {
+				} else if version == 2 {
 					r = t.TestEngine.TestEngineNewPayloadV2(payload)
 				} else {
 					t.Fatalf("FAIL: Unknown version %d", step.Version)
@@ -466,7 +464,7 @@ func (step NewPayloads) Execute(t *BlobTestContext) error {
 				if err != nil {
 					t.Fatalf("FAIL: Error retrieving blob bundle (payload %d/%d): %v", p+1, payloadCount, err)
 				}
-				if err := step.VerifyPayload(t.TimeoutContext, t.TestEngine, blobTxsInPayload, payload, &previousPayload); err != nil {
+				if err := step.VerifyPayload(t.TimeoutContext, t.Env.ForkConfig, t.TestEngine, blobTxsInPayload, payload, &previousPayload); err != nil {
 					t.Fatalf("FAIL: Error verifying payload (payload %d/%d): %v", p+1, payloadCount, err)
 				}
 				previousPayload = t.CLMock.LatestPayloadBuilt
