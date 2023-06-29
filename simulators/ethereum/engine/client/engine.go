@@ -38,11 +38,7 @@ type Engine interface {
 	GetPayloadV3(ctx context.Context, payloadId *api.PayloadID) (api.ExecutableData, *big.Int, *typ.BlobsBundle, error)
 
 	NewPayload(ctx context.Context, version int, payload interface{}, versionedHashes []common.Hash) (api.PayloadStatusV1, error)
-<<<<<<< HEAD
-	NewPayloadV1(ctx context.Context, payload *client_types.ExecutableDataV1) (api.PayloadStatusV1, error)
-=======
 	NewPayloadV1(ctx context.Context, payload *typ.ExecutableDataV1) (api.PayloadStatusV1, error)
->>>>>>> marioevz/engine-api-blobs
 	NewPayloadV2(ctx context.Context, payload *api.ExecutableData) (api.PayloadStatusV1, error)
 	NewPayloadV3(ctx context.Context, payload *api.ExecutableData, versionedHashes []common.Hash) (api.PayloadStatusV1, error)
 

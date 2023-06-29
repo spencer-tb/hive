@@ -433,8 +433,6 @@ func (ec *HiveRPCEngineClient) GetPayloadBodiesByHashV1(ctx context.Context, has
 	return result, err
 }
 
-<<<<<<< HEAD
-=======
 // Get Blob Bundle API Calls
 func (ec *HiveRPCEngineClient) GetBlobsBundleV1(ctx context.Context, payloadId *api.PayloadID) (*typ.BlobsBundle, error) {
 	var (
@@ -450,17 +448,12 @@ func (ec *HiveRPCEngineClient) GetBlobsBundleV1(ctx context.Context, payloadId *
 }
 
 // New Payload API Call Methods
->>>>>>> marioevz/engine-api-blobs
 func (ec *HiveRPCEngineClient) NewPayload(ctx context.Context, version int, payload interface{}, versionedHashes []common.Hash) (result api.PayloadStatusV1, err error) {
 	if err := ec.PrepareDefaultAuthCallToken(); err != nil {
 		return result, err
 	}
 
-<<<<<<< HEAD
-	if versionedHashes != nil {
-=======
 	if version >= 3 {
->>>>>>> marioevz/engine-api-blobs
 		err = ec.c.CallContext(ctx, &result, fmt.Sprintf("engine_newPayloadV%d", version), payload, versionedHashes)
 	} else {
 		err = ec.c.CallContext(ctx, &result, fmt.Sprintf("engine_newPayloadV%d", version), payload)
@@ -478,14 +471,6 @@ func (ec *HiveRPCEngineClient) NewPayloadV1(ctx context.Context, payload *typ.Ex
 func (ec *HiveRPCEngineClient) NewPayloadV2(ctx context.Context, payload *api.ExecutableData) (api.PayloadStatusV1, error) {
 	ec.latestPayloadSent = payload
 	return ec.NewPayload(ctx, 2, payload, nil)
-<<<<<<< HEAD
-}
-
-func (ec *HiveRPCEngineClient) NewPayloadV3(ctx context.Context, payload *api.ExecutableData, versionedHashes []common.Hash) (api.PayloadStatusV1, error) {
-	ec.latestPayloadSent = payload
-	return ec.NewPayload(ctx, 3, payload, versionedHashes)
-}
-=======
 }
 
 func (ec *HiveRPCEngineClient) NewPayloadV3(ctx context.Context, payload *api.ExecutableData, versionedHashes []common.Hash) (api.PayloadStatusV1, error) {
@@ -494,7 +479,6 @@ func (ec *HiveRPCEngineClient) NewPayloadV3(ctx context.Context, payload *api.Ex
 }
 
 // Exchange Transition Configuration API Call Methods
->>>>>>> marioevz/engine-api-blobs
 func (ec *HiveRPCEngineClient) ExchangeTransitionConfigurationV1(ctx context.Context, tConf *api.TransitionConfigurationV1) (api.TransitionConfigurationV1, error) {
 	var result api.TransitionConfigurationV1
 	err := ec.c.CallContext(ctx, &result, "engine_exchangeTransitionConfigurationV1", tConf)
