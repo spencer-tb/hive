@@ -453,7 +453,7 @@ func (ec *HiveRPCEngineClient) NewPayload(ctx context.Context, version int, payl
 		return result, err
 	}
 
-	if versionedHashes != nil {
+	if version >= 3 {
 		err = ec.c.CallContext(ctx, &result, fmt.Sprintf("engine_newPayloadV%d", version), payload, versionedHashes)
 	} else {
 		err = ec.c.CallContext(ctx, &result, fmt.Sprintf("engine_newPayloadV%d", version), payload)

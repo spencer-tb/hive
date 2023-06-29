@@ -27,6 +27,10 @@ var (
 	DATA_GASPRICE_UPDATE_FRACTION = uint64(3338477)
 
 	BLOB_COMMITMENT_VERSION_KZG = byte(0x01)
+
+	// Engine API errors
+	INVALID_PARAMS_ERROR   = pInt(-32602)
+	UNSUPPORTED_FORK_ERROR = pInt(-38005)
 )
 
 // Precalculate the first data gas cost increase
@@ -510,48 +514,212 @@ var Tests = []test.SpecInterface{
 			},
 		},
 	},
-	// NewPayload Version Negative Tests
-	&BlobsBaseSpec{
 
+	// NewPayloadV3 Before Cancun, Negative Tests
+	&BlobsBaseSpec{
 		Spec: test.Spec{
-			Name: "NewPayloadV2 After Cancun",
+			Name: "NewPayloadV3 Before Cancun, Nil Data Fields, Nil Versioned Hashes",
 			About: `
-			Test sending NewPayloadV2 after cancun fork, which
-			should result in error.
+			Test sending NewPayloadV3 Before Cancun with:
+			- nil ExcessDataGas
+			- nil DataGasUsed
+			- nil Versioned Hashes Array
 			`,
 		},
 
-		// We fork on genesis
-		CancunForkHeight: 0,
+		CancunForkHeight: 2,
 
 		TestSequence: TestSequence{
-			// Send multiple blob transactions with the same nonce.
 			NewPayloads{
 				ExpectedIncludedBlobCount: 0,
-				Version:                   2,
-				ExpectedError:             pInt(-38005),
+				Version:                   3,
+				VersionedHashes: &VersionedHashes{
+					Blobs: nil,
+				},
+				// On DEVNET 8:
+				// ExpectedError:             INVALID_PARAMS_ERROR,
 			},
 		},
 	},
 	&BlobsBaseSpec{
-
 		Spec: test.Spec{
-			Name: "NewPayloadV3 Before Cancun",
+			Name: "NewPayloadV3 Before Cancun, Nil ExcessDataGas, 0x00 DataGasUsed, Nil Versioned Hashes",
 			About: `
-			Test sending NewPayloadV3 before cancun fork, which
-			should result in error.
+			Test sending NewPayloadV3 Before Cancun with:
+			- nil ExcessDataGas
+			- 0x00 DataGasUsed
+			- nil Versioned Hashes Array
 			`,
 		},
 
-		// We fork on genesis
 		CancunForkHeight: 2,
 
 		TestSequence: TestSequence{
-			// Send multiple blob transactions with the same nonce.
 			NewPayloads{
 				ExpectedIncludedBlobCount: 0,
 				Version:                   3,
-				ExpectedError:             pInt(-38005),
+				PayloadCustomizer: &helper.CustomPayloadData{
+					DataGasUsed: pUint64(0),
+				},
+				ExpectedError: INVALID_PARAMS_ERROR,
+			},
+		},
+	},
+	&BlobsBaseSpec{
+		Spec: test.Spec{
+			Name: "NewPayloadV3 Before Cancun, 0x00 ExcessDataGas, Nil DataGasUsed, Nil Versioned Hashes",
+			About: `
+			Test sending NewPayloadV3 Before Cancun with:
+			- 0x00 ExcessDataGas
+			- nil DataGasUsed
+			- nil Versioned Hashes Array
+			`,
+		},
+
+		CancunForkHeight: 2,
+
+		TestSequence: TestSequence{
+			NewPayloads{
+				ExpectedIncludedBlobCount: 0,
+				Version:                   3,
+				PayloadCustomizer: &helper.CustomPayloadData{
+					ExcessDataGas: pUint64(0),
+				},
+				ExpectedError: INVALID_PARAMS_ERROR,
+			},
+		},
+	},
+	/*
+		// Unspecified Outcome For Devnet 7, uncomment for Devnet 8
+		&BlobsBaseSpec{
+			Spec: test.Spec{
+				Name: "NewPayloadV3 Before Cancun, Nil Data Fields, Empty Array Versioned Hashes",
+				About: `
+				Test sending NewPayloadV3 Before Cancun with:
+				- nil ExcessDataGas
+				- nil DataGasUsed
+				- Empty Versioned Hashes Array
+				`,
+			},
+
+			CancunForkHeight: 2,
+
+			TestSequence: TestSequence{
+				NewPayloads{
+					ExpectedIncludedBlobCount: 0,
+					Version:                   3,
+					VersionedHashes: &VersionedHashes{
+						Blobs: []helper.BlobID{},
+					},
+					ExpectedError: INVALID_PARAMS_ERROR,
+				},
+			},
+		},
+	*/
+	&BlobsBaseSpec{
+		Spec: test.Spec{
+			Name: "NewPayloadV3 Before Cancun, 0x00 Data Fields, Empty Array Versioned Hashes",
+			About: `
+			Test sending NewPayloadV3 Before Cancun with:
+			- 0x00 ExcessDataGas
+			- 0x00 DataGasUsed
+			- Empty Versioned Hashes Array
+			`,
+		},
+
+		CancunForkHeight: 2,
+
+		TestSequence: TestSequence{
+			NewPayloads{
+				ExpectedIncludedBlobCount: 0,
+				Version:                   3,
+				VersionedHashes: &VersionedHashes{
+					Blobs: []helper.BlobID{},
+				},
+				PayloadCustomizer: &helper.CustomPayloadData{
+					ExcessDataGas: pUint64(0),
+					DataGasUsed:   pUint64(0),
+				},
+				ExpectedError: INVALID_PARAMS_ERROR,
+				// On DEVNET 8:
+				// ExpectedError: UNSUPPORTED_FORK_ERROR,
+			},
+		},
+	},
+
+	// NewPayloadV3 After Cancun, Negative Tests
+	/*
+		// Unspecified Outcome For Devnet 7, uncomment for Devnet 8
+		&BlobsBaseSpec{
+			Spec: test.Spec{
+				Name: "NewPayloadV3 After Cancun, 0x00 Data Fields, Nil Versioned Hashes",
+				About: `
+				Test sending NewPayloadV3 After Cancun with:
+				- 0x00 ExcessDataGas
+				- 0x00 DataGasUsed
+				- nil Versioned Hashes Array
+				`,
+			},
+
+			CancunForkHeight: 1,
+
+			TestSequence: TestSequence{
+				NewPayloads{
+					ExpectedIncludedBlobCount: 0,
+					Version:                   3,
+					VersionedHashes: &VersionedHashes{
+						Blobs: nil,
+					},
+					ExpectedError: INVALID_PARAMS_ERROR,
+				},
+			},
+		},
+	*/
+	&BlobsBaseSpec{
+		Spec: test.Spec{
+			Name: "NewPayloadV3 After Cancun, Nil ExcessDataGas, 0x00 DataGasUsed, Empty Array Versioned Hashes",
+			About: `
+			Test sending NewPayloadV3 After Cancun with:
+			- nil ExcessDataGas
+			- 0x00 DataGasUsed
+			- Empty Versioned Hashes Array
+			`,
+		},
+
+		CancunForkHeight: 1,
+
+		TestSequence: TestSequence{
+			NewPayloads{
+				ExpectedIncludedBlobCount: 0,
+				Version:                   3,
+				PayloadCustomizer: &helper.CustomPayloadData{
+					RemoveExcessDataGas: true,
+				},
+				ExpectedError: INVALID_PARAMS_ERROR,
+			},
+		},
+	},
+	&BlobsBaseSpec{
+		Spec: test.Spec{
+			Name: "NewPayloadV3 After Cancun, 0x00 ExcessDataGas, Nil DataGasUsed, Empty Array Versioned Hashes",
+			About: `
+			Test sending NewPayloadV3 After Cancun with:
+			- 0x00 ExcessDataGas
+			- nil DataGasUsed
+			- Empty Versioned Hashes Array
+			`,
+		},
+
+		CancunForkHeight: 1,
+
+		TestSequence: TestSequence{
+			NewPayloads{
+				ExpectedIncludedBlobCount: 0,
+				Version:                   3,
+				PayloadCustomizer: &helper.CustomPayloadData{
+					RemoveDataGasUsed: true,
+				},
+				ExpectedError: INVALID_PARAMS_ERROR,
 			},
 		},
 	},
