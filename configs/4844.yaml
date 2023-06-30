@@ -22,9 +22,9 @@
 - client: go-ethereum
   nametag: 4844-git
   dockerfile: git
-  build_args:
-      github: MariusVanDerWijden/go-ethereum
-      tag: 4844-devnet-6
+  build_args: # TODO: add Marius back once updated
+      github: spencer-tb/go-ethereum
+      tag: hive-cancun-dvnt7
 
 - client: nethermind
   nametag: 4844-git
