@@ -1,22 +1,22 @@
 - client: besu
   nametag: 4844-git
   dockerfile: git
-  build_args: # TODO: add hyperledger/besu @ 4844-devnet-5b once fixde
+  build_args: # TODO: add hyperledger/besu @ 4844-devnet-5b once fixed
       github: spencer-tb/besu
       tag: hive-cancun-dvnt7
 
 - client: erigon
   nametag: 4844-git
   dockerfile: git
-  build_args:
+  build_args: # TODO: add up to spec 4844 enable branch for erigon
       github: roberto-bayardo/erigon
       tag: eip-4844
 
 - client: ethereumjs
   nametag: 4844-git
-  build_args:
-      baseimage: ethereumjs/ethereumjs-monorepo
-      tag: master
+  build_args: # TODO: add ethereumjs/ethereumjs-monorepo @ master once fixed
+      github: spencer-tb/ethereumjs-monorepo
+      tag: hive-cancun-dvnt7
 
 - client: go-ethereum
   nametag: 4844-git
@@ -30,4 +30,4 @@
   dockerfile: git
   build_args:
       github: NethermindEth/nethermind
-      tag: feature/eip-4844-v6
+      tag: feature/eip-4844-v7
