@@ -16,16 +16,16 @@ var (
 	DATAHASH_ADDRESS_COUNT = 1000
 
 	// Fork specific constants
-	DATA_GAS_PER_BLOB = uint64(0x20000)
+	GAS_PER_BLOB = uint64(0x20000)
 
 	MIN_DATA_GASPRICE         = uint64(1)
-	MAX_DATA_GAS_PER_BLOCK    = uint64(786432)
-	TARGET_DATA_GAS_PER_BLOCK = uint64(393216)
+	MAX_BLOB_GAS_PER_BLOCK    = uint64(786432)
+	TARGET_BLOB_GAS_PER_BLOCK = uint64(393216)
 
-	TARGET_BLOBS_PER_BLOCK = uint64(TARGET_DATA_GAS_PER_BLOCK / DATA_GAS_PER_BLOB)
-	MAX_BLOBS_PER_BLOCK    = uint64(MAX_DATA_GAS_PER_BLOCK / DATA_GAS_PER_BLOB)
+	TARGET_BLOBS_PER_BLOCK = uint64(TARGET_BLOB_GAS_PER_BLOCK / GAS_PER_BLOB)
+	MAX_BLOBS_PER_BLOCK    = uint64(MAX_BLOB_GAS_PER_BLOCK / GAS_PER_BLOB)
 
-	DATA_GASPRICE_UPDATE_FRACTION = uint64(3338477)
+	BLOB_GASPRICE_UPDATE_FRACTION = uint64(3338477)
 
 	BLOB_COMMITMENT_VERSION_KZG = byte(0x01)
 
@@ -36,7 +36,7 @@ var (
 
 // Precalculate the first data gas cost increase
 var (
-	DATA_GAS_COST_INCREMENT_EXCEED_BLOBS = GetMinExcessDataBlobsForDataGasPrice(2)
+	DATA_GAS_COST_INCREMENT_EXCEED_BLOBS = GetMinExcessBlobsForBlobGasPrice(2)
 )
 
 func pUint64(v uint64) *uint64 {
@@ -72,7 +72,7 @@ var Tests = []test.SpecInterface{
 			// with enough data gas cost to make sure they are included in the first block.
 			SendBlobTransactions{
 				BlobTransactionSendCount:      TARGET_BLOBS_PER_BLOCK,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 
 			// We create the first payload, and verify that the blob transactions
@@ -88,7 +88,7 @@ var Tests = []test.SpecInterface{
 			SendBlobTransactions{
 				BlobTransactionSendCount:      DATA_GAS_COST_INCREMENT_EXCEED_BLOBS/(MAX_BLOBS_PER_BLOCK-TARGET_BLOBS_PER_BLOCK) + 1,
 				BlobsPerTransaction:           MAX_BLOBS_PER_BLOCK,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 
 			// Next payloads will have max data blobs each
@@ -128,7 +128,7 @@ var Tests = []test.SpecInterface{
 			// with enough data gas cost to make sure they are included in the first block.
 			SendBlobTransactions{
 				BlobTransactionSendCount:      TARGET_BLOBS_PER_BLOCK,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 
 			// We create the first payload, and verify that the blob transactions
@@ -144,7 +144,7 @@ var Tests = []test.SpecInterface{
 			SendBlobTransactions{
 				BlobTransactionSendCount:      DATA_GAS_COST_INCREMENT_EXCEED_BLOBS/(MAX_BLOBS_PER_BLOCK-TARGET_BLOBS_PER_BLOCK) + 1,
 				BlobsPerTransaction:           MAX_BLOBS_PER_BLOCK,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 
 			// Next payloads will have max data blobs each
@@ -190,13 +190,13 @@ var Tests = []test.SpecInterface{
 			SendBlobTransactions{
 				BlobTransactionSendCount:      5,
 				BlobsPerTransaction:           MAX_BLOBS_PER_BLOCK - 1,
-				BlobTransactionMaxDataGasCost: big.NewInt(100),
+				BlobTransactionMaxBlobGasCost: big.NewInt(100),
 			},
 			// Then send the single-blob transactions
 			SendBlobTransactions{
 				BlobTransactionSendCount:      MAX_BLOBS_PER_BLOCK + 1,
 				BlobsPerTransaction:           1,
-				BlobTransactionMaxDataGasCost: big.NewInt(100),
+				BlobTransactionMaxBlobGasCost: big.NewInt(100),
 			},
 
 			// First four payloads have MAX_BLOBS_PER_BLOCK-1 blobs each
@@ -238,21 +238,21 @@ var Tests = []test.SpecInterface{
 			SendBlobTransactions{
 				BlobTransactionSendCount:      5,
 				BlobsPerTransaction:           MAX_BLOBS_PER_BLOCK - 1,
-				BlobTransactionMaxDataGasCost: big.NewInt(100),
+				BlobTransactionMaxBlobGasCost: big.NewInt(100),
 			},
 
 			// Then send the dual-blob transaction
 			SendBlobTransactions{
 				BlobTransactionSendCount:      1,
 				BlobsPerTransaction:           2,
-				BlobTransactionMaxDataGasCost: big.NewInt(100),
+				BlobTransactionMaxBlobGasCost: big.NewInt(100),
 			},
 
 			// Then send the single-blob transactions
 			SendBlobTransactions{
 				BlobTransactionSendCount:      MAX_BLOBS_PER_BLOCK - 2,
 				BlobsPerTransaction:           1,
-				BlobTransactionMaxDataGasCost: big.NewInt(100),
+				BlobTransactionMaxBlobGasCost: big.NewInt(100),
 			},
 
 			// First five payloads have MAX_BLOBS_PER_BLOCK-1 blobs each
@@ -293,14 +293,14 @@ var Tests = []test.SpecInterface{
 			SendBlobTransactions{
 				BlobTransactionSendCount:      5,
 				BlobsPerTransaction:           MAX_BLOBS_PER_BLOCK - 1,
-				BlobTransactionMaxDataGasCost: big.NewInt(100),
+				BlobTransactionMaxBlobGasCost: big.NewInt(100),
 				AccountIndex:                  0,
 			},
 			// Then send the single-blob transactions from account B
 			SendBlobTransactions{
 				BlobTransactionSendCount:      5,
 				BlobsPerTransaction:           1,
-				BlobTransactionMaxDataGasCost: big.NewInt(100),
+				BlobTransactionMaxBlobGasCost: big.NewInt(100),
 				AccountIndex:                  1,
 			},
 
@@ -353,7 +353,7 @@ var Tests = []test.SpecInterface{
 			SendBlobTransactions{
 				BlobTransactionSendCount:      5,
 				BlobsPerTransaction:           MAX_BLOBS_PER_BLOCK - 1,
-				BlobTransactionMaxDataGasCost: big.NewInt(120),
+				BlobTransactionMaxBlobGasCost: big.NewInt(120),
 				AccountIndex:                  0,
 				ClientIndex:                   0,
 			},
@@ -362,7 +362,7 @@ var Tests = []test.SpecInterface{
 			SendBlobTransactions{
 				BlobTransactionSendCount:      5,
 				BlobsPerTransaction:           1,
-				BlobTransactionMaxDataGasCost: big.NewInt(100),
+				BlobTransactionMaxBlobGasCost: big.NewInt(100),
 				AccountIndex:                  1,
 				ClientIndex:                   1,
 			},
@@ -394,27 +394,27 @@ var Tests = []test.SpecInterface{
 			// Send multiple blob transactions with the same nonce.
 			SendBlobTransactions{ // Blob ID 0
 				BlobTransactionSendCount:      1,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 				BlobTransactionGasFeeCap:      big.NewInt(1e9),
 				BlobTransactionGasTipCap:      big.NewInt(1e9),
 			},
 			SendBlobTransactions{ // Blob ID 1
 				BlobTransactionSendCount:      1,
-				BlobTransactionMaxDataGasCost: big.NewInt(1e2),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1e2),
 				BlobTransactionGasFeeCap:      big.NewInt(1e10),
 				BlobTransactionGasTipCap:      big.NewInt(1e10),
 				ReplaceTransactions:           true,
 			},
 			SendBlobTransactions{ // Blob ID 2
 				BlobTransactionSendCount:      1,
-				BlobTransactionMaxDataGasCost: big.NewInt(1e3),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1e3),
 				BlobTransactionGasFeeCap:      big.NewInt(1e11),
 				BlobTransactionGasTipCap:      big.NewInt(1e11),
 				ReplaceTransactions:           true,
 			},
 			SendBlobTransactions{ // Blob ID 3
 				BlobTransactionSendCount:      1,
-				BlobTransactionMaxDataGasCost: big.NewInt(1e4),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1e4),
 				BlobTransactionGasFeeCap:      big.NewInt(1e12),
 				BlobTransactionGasTipCap:      big.NewInt(1e12),
 				ReplaceTransactions:           true,
@@ -448,61 +448,61 @@ var Tests = []test.SpecInterface{
 					SendBlobTransactions{
 						BlobTransactionSendCount:      5,
 						BlobsPerTransaction:           MAX_BLOBS_PER_BLOCK,
-						BlobTransactionMaxDataGasCost: big.NewInt(100),
+						BlobTransactionMaxBlobGasCost: big.NewInt(100),
 						AccountIndex:                  0,
 					},
 					SendBlobTransactions{
 						BlobTransactionSendCount:      5,
 						BlobsPerTransaction:           MAX_BLOBS_PER_BLOCK,
-						BlobTransactionMaxDataGasCost: big.NewInt(100),
+						BlobTransactionMaxBlobGasCost: big.NewInt(100),
 						AccountIndex:                  1,
 					},
 					SendBlobTransactions{
 						BlobTransactionSendCount:      5,
 						BlobsPerTransaction:           MAX_BLOBS_PER_BLOCK,
-						BlobTransactionMaxDataGasCost: big.NewInt(100),
+						BlobTransactionMaxBlobGasCost: big.NewInt(100),
 						AccountIndex:                  2,
 					},
 					SendBlobTransactions{
 						BlobTransactionSendCount:      5,
 						BlobsPerTransaction:           MAX_BLOBS_PER_BLOCK,
-						BlobTransactionMaxDataGasCost: big.NewInt(100),
+						BlobTransactionMaxBlobGasCost: big.NewInt(100),
 						AccountIndex:                  3,
 					},
 					SendBlobTransactions{
 						BlobTransactionSendCount:      5,
 						BlobsPerTransaction:           MAX_BLOBS_PER_BLOCK,
-						BlobTransactionMaxDataGasCost: big.NewInt(100),
+						BlobTransactionMaxBlobGasCost: big.NewInt(100),
 						AccountIndex:                  4,
 					},
 					SendBlobTransactions{
 						BlobTransactionSendCount:      5,
 						BlobsPerTransaction:           MAX_BLOBS_PER_BLOCK,
-						BlobTransactionMaxDataGasCost: big.NewInt(100),
+						BlobTransactionMaxBlobGasCost: big.NewInt(100),
 						AccountIndex:                  5,
 					},
 					SendBlobTransactions{
 						BlobTransactionSendCount:      5,
 						BlobsPerTransaction:           MAX_BLOBS_PER_BLOCK,
-						BlobTransactionMaxDataGasCost: big.NewInt(100),
+						BlobTransactionMaxBlobGasCost: big.NewInt(100),
 						AccountIndex:                  6,
 					},
 					SendBlobTransactions{
 						BlobTransactionSendCount:      5,
 						BlobsPerTransaction:           MAX_BLOBS_PER_BLOCK,
-						BlobTransactionMaxDataGasCost: big.NewInt(100),
+						BlobTransactionMaxBlobGasCost: big.NewInt(100),
 						AccountIndex:                  7,
 					},
 					SendBlobTransactions{
 						BlobTransactionSendCount:      5,
 						BlobsPerTransaction:           MAX_BLOBS_PER_BLOCK,
-						BlobTransactionMaxDataGasCost: big.NewInt(100),
+						BlobTransactionMaxBlobGasCost: big.NewInt(100),
 						AccountIndex:                  8,
 					},
 					SendBlobTransactions{
 						BlobTransactionSendCount:      5,
 						BlobsPerTransaction:           MAX_BLOBS_PER_BLOCK,
-						BlobTransactionMaxDataGasCost: big.NewInt(100),
+						BlobTransactionMaxBlobGasCost: big.NewInt(100),
 						AccountIndex:                  9,
 					},
 				},
@@ -522,8 +522,8 @@ var Tests = []test.SpecInterface{
 			Name: "NewPayloadV3 Before Cancun, Nil Data Fields, Nil Versioned Hashes",
 			About: `
 			Test sending NewPayloadV3 Before Cancun with:
-			- nil ExcessDataGas
-			- nil DataGasUsed
+			- nil ExcessBlobGas
+			- nil BlobGasUsed
 			- nil Versioned Hashes Array
 			`,
 		},
@@ -544,11 +544,11 @@ var Tests = []test.SpecInterface{
 	},
 	&BlobsBaseSpec{
 		Spec: test.Spec{
-			Name: "NewPayloadV3 Before Cancun, Nil ExcessDataGas, 0x00 DataGasUsed, Nil Versioned Hashes",
+			Name: "NewPayloadV3 Before Cancun, Nil ExcessBlobGas, 0x00 BlobGasUsed, Nil Versioned Hashes",
 			About: `
 			Test sending NewPayloadV3 Before Cancun with:
-			- nil ExcessDataGas
-			- 0x00 DataGasUsed
+			- nil ExcessBlobGas
+			- 0x00 BlobGasUsed
 			- nil Versioned Hashes Array
 			`,
 		},
@@ -560,7 +560,7 @@ var Tests = []test.SpecInterface{
 				ExpectedIncludedBlobCount: 0,
 				Version:                   3,
 				PayloadCustomizer: &helper.CustomPayloadData{
-					DataGasUsed: pUint64(0),
+					BlobGasUsed: pUint64(0),
 				},
 				ExpectedError: INVALID_PARAMS_ERROR,
 			},
@@ -568,11 +568,11 @@ var Tests = []test.SpecInterface{
 	},
 	&BlobsBaseSpec{
 		Spec: test.Spec{
-			Name: "NewPayloadV3 Before Cancun, 0x00 ExcessDataGas, Nil DataGasUsed, Nil Versioned Hashes",
+			Name: "NewPayloadV3 Before Cancun, 0x00 ExcessBlobGas, Nil BlobGasUsed, Nil Versioned Hashes",
 			About: `
 			Test sending NewPayloadV3 Before Cancun with:
-			- 0x00 ExcessDataGas
-			- nil DataGasUsed
+			- 0x00 ExcessBlobGas
+			- nil BlobGasUsed
 			- nil Versioned Hashes Array
 			`,
 		},
@@ -584,7 +584,7 @@ var Tests = []test.SpecInterface{
 				ExpectedIncludedBlobCount: 0,
 				Version:                   3,
 				PayloadCustomizer: &helper.CustomPayloadData{
-					ExcessDataGas: pUint64(0),
+					ExcessBlobGas: pUint64(0),
 				},
 				ExpectedError: INVALID_PARAMS_ERROR,
 			},
@@ -597,8 +597,8 @@ var Tests = []test.SpecInterface{
 				Name: "NewPayloadV3 Before Cancun, Nil Data Fields, Empty Array Versioned Hashes",
 				About: `
 				Test sending NewPayloadV3 Before Cancun with:
-				- nil ExcessDataGas
-				- nil DataGasUsed
+				- nil ExcessBlobGas
+				- nil BlobGasUsed
 				- Empty Versioned Hashes Array
 				`,
 			},
@@ -622,8 +622,8 @@ var Tests = []test.SpecInterface{
 			Name: "NewPayloadV3 Before Cancun, 0x00 Data Fields, Empty Array Versioned Hashes",
 			About: `
 			Test sending NewPayloadV3 Before Cancun with:
-			- 0x00 ExcessDataGas
-			- 0x00 DataGasUsed
+			- 0x00 ExcessBlobGas
+			- 0x00 BlobGasUsed
 			- Empty Versioned Hashes Array
 			`,
 		},
@@ -638,8 +638,8 @@ var Tests = []test.SpecInterface{
 					Blobs: []helper.BlobID{},
 				},
 				PayloadCustomizer: &helper.CustomPayloadData{
-					ExcessDataGas: pUint64(0),
-					DataGasUsed:   pUint64(0),
+					ExcessBlobGas: pUint64(0),
+					BlobGasUsed:   pUint64(0),
 				},
 				ExpectedError: INVALID_PARAMS_ERROR,
 				// On DEVNET 8:
@@ -656,8 +656,8 @@ var Tests = []test.SpecInterface{
 				Name: "NewPayloadV3 After Cancun, 0x00 Data Fields, Nil Versioned Hashes",
 				About: `
 				Test sending NewPayloadV3 After Cancun with:
-				- 0x00 ExcessDataGas
-				- 0x00 DataGasUsed
+				- 0x00 ExcessBlobGas
+				- 0x00 BlobGasUsed
 				- nil Versioned Hashes Array
 				`,
 			},
@@ -678,11 +678,11 @@ var Tests = []test.SpecInterface{
 	*/
 	&BlobsBaseSpec{
 		Spec: test.Spec{
-			Name: "NewPayloadV3 After Cancun, Nil ExcessDataGas, 0x00 DataGasUsed, Empty Array Versioned Hashes",
+			Name: "NewPayloadV3 After Cancun, Nil ExcessBlobGas, 0x00 BlobGasUsed, Empty Array Versioned Hashes",
 			About: `
 			Test sending NewPayloadV3 After Cancun with:
-			- nil ExcessDataGas
-			- 0x00 DataGasUsed
+			- nil ExcessBlobGas
+			- 0x00 BlobGasUsed
 			- Empty Versioned Hashes Array
 			`,
 		},
@@ -694,7 +694,7 @@ var Tests = []test.SpecInterface{
 				ExpectedIncludedBlobCount: 0,
 				Version:                   3,
 				PayloadCustomizer: &helper.CustomPayloadData{
-					RemoveExcessDataGas: true,
+					RemoveExcessBlobGas: true,
 				},
 				ExpectedError: INVALID_PARAMS_ERROR,
 			},
@@ -702,11 +702,11 @@ var Tests = []test.SpecInterface{
 	},
 	&BlobsBaseSpec{
 		Spec: test.Spec{
-			Name: "NewPayloadV3 After Cancun, 0x00 ExcessDataGas, Nil DataGasUsed, Empty Array Versioned Hashes",
+			Name: "NewPayloadV3 After Cancun, 0x00 ExcessBlobGas, Nil BlobGasUsed, Empty Array Versioned Hashes",
 			About: `
 			Test sending NewPayloadV3 After Cancun with:
-			- 0x00 ExcessDataGas
-			- nil DataGasUsed
+			- 0x00 ExcessBlobGas
+			- nil BlobGasUsed
 			- Empty Versioned Hashes Array
 			`,
 		},
@@ -718,7 +718,7 @@ var Tests = []test.SpecInterface{
 				ExpectedIncludedBlobCount: 0,
 				Version:                   3,
 				PayloadCustomizer: &helper.CustomPayloadData{
-					RemoveDataGasUsed: true,
+					RemoveBlobGasUsed: true,
 				},
 				ExpectedError: INVALID_PARAMS_ERROR,
 			},
@@ -738,7 +738,7 @@ var Tests = []test.SpecInterface{
 		TestSequence: TestSequence{
 			SendBlobTransactions{
 				BlobTransactionSendCount:      TARGET_BLOBS_PER_BLOCK,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 			NewPayloads{
 				ExpectedIncludedBlobCount: TARGET_BLOBS_PER_BLOCK,
@@ -764,7 +764,7 @@ var Tests = []test.SpecInterface{
 		TestSequence: TestSequence{
 			SendBlobTransactions{
 				BlobTransactionSendCount:      TARGET_BLOBS_PER_BLOCK,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 			NewPayloads{
 				ExpectedIncludedBlobCount: TARGET_BLOBS_PER_BLOCK,
@@ -788,7 +788,7 @@ var Tests = []test.SpecInterface{
 		TestSequence: TestSequence{
 			SendBlobTransactions{
 				BlobTransactionSendCount:      TARGET_BLOBS_PER_BLOCK,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 			NewPayloads{
 				ExpectedIncludedBlobCount: TARGET_BLOBS_PER_BLOCK,
@@ -812,7 +812,7 @@ var Tests = []test.SpecInterface{
 		TestSequence: TestSequence{
 			SendBlobTransactions{
 				BlobTransactionSendCount:      TARGET_BLOBS_PER_BLOCK,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 			NewPayloads{
 				ExpectedIncludedBlobCount: TARGET_BLOBS_PER_BLOCK,
@@ -836,7 +836,7 @@ var Tests = []test.SpecInterface{
 		TestSequence: TestSequence{
 			SendBlobTransactions{
 				BlobTransactionSendCount:      TARGET_BLOBS_PER_BLOCK,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 			NewPayloads{
 				ExpectedIncludedBlobCount: TARGET_BLOBS_PER_BLOCK,
@@ -859,7 +859,7 @@ var Tests = []test.SpecInterface{
 		TestSequence: TestSequence{
 			SendBlobTransactions{
 				BlobTransactionSendCount:      TARGET_BLOBS_PER_BLOCK,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 			NewPayloads{
 				ExpectedIncludedBlobCount: TARGET_BLOBS_PER_BLOCK,
@@ -884,7 +884,7 @@ var Tests = []test.SpecInterface{
 		TestSequence: TestSequence{
 			SendBlobTransactions{
 				BlobTransactionSendCount:      TARGET_BLOBS_PER_BLOCK,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 			NewPayloads{
 				ExpectedIncludedBlobCount: TARGET_BLOBS_PER_BLOCK,
@@ -908,7 +908,7 @@ var Tests = []test.SpecInterface{
 		TestSequence: TestSequence{
 			SendBlobTransactions{
 				BlobTransactionSendCount:      TARGET_BLOBS_PER_BLOCK,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 			NewPayloads{
 				ExpectedIncludedBlobCount: TARGET_BLOBS_PER_BLOCK,
@@ -955,7 +955,7 @@ var Tests = []test.SpecInterface{
 			NewPayloads{}, // Send new payload so the parent is unknown to the secondary client
 			SendBlobTransactions{
 				BlobTransactionSendCount:      TARGET_BLOBS_PER_BLOCK,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 			NewPayloads{
 				ExpectedIncludedBlobCount: TARGET_BLOBS_PER_BLOCK,
@@ -991,7 +991,7 @@ var Tests = []test.SpecInterface{
 			NewPayloads{}, // Send new payload so the parent is unknown to the secondary client
 			SendBlobTransactions{
 				BlobTransactionSendCount:      TARGET_BLOBS_PER_BLOCK,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 			NewPayloads{
 				ExpectedIncludedBlobCount: TARGET_BLOBS_PER_BLOCK,
@@ -1025,7 +1025,7 @@ var Tests = []test.SpecInterface{
 			NewPayloads{}, // Send new payload so the parent is unknown to the secondary client
 			SendBlobTransactions{
 				BlobTransactionSendCount:      TARGET_BLOBS_PER_BLOCK,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 			NewPayloads{
 				ExpectedIncludedBlobCount: TARGET_BLOBS_PER_BLOCK,
@@ -1058,7 +1058,7 @@ var Tests = []test.SpecInterface{
 			NewPayloads{}, // Send new payload so the parent is unknown to the secondary client
 			SendBlobTransactions{
 				BlobTransactionSendCount:      TARGET_BLOBS_PER_BLOCK,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 			NewPayloads{
 				ExpectedIncludedBlobCount: TARGET_BLOBS_PER_BLOCK,
@@ -1092,7 +1092,7 @@ var Tests = []test.SpecInterface{
 			NewPayloads{}, // Send new payload so the parent is unknown to the secondary client
 			SendBlobTransactions{
 				BlobTransactionSendCount:      TARGET_BLOBS_PER_BLOCK,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 			NewPayloads{
 				ExpectedIncludedBlobCount: TARGET_BLOBS_PER_BLOCK,
@@ -1125,7 +1125,7 @@ var Tests = []test.SpecInterface{
 			NewPayloads{}, // Send new payload so the parent is unknown to the secondary client
 			SendBlobTransactions{
 				BlobTransactionSendCount:      TARGET_BLOBS_PER_BLOCK,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 			NewPayloads{
 				ExpectedIncludedBlobCount: TARGET_BLOBS_PER_BLOCK,
@@ -1160,7 +1160,7 @@ var Tests = []test.SpecInterface{
 			NewPayloads{}, // Send new payload so the parent is unknown to the secondary client
 			SendBlobTransactions{
 				BlobTransactionSendCount:      TARGET_BLOBS_PER_BLOCK,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 			NewPayloads{
 				ExpectedIncludedBlobCount: TARGET_BLOBS_PER_BLOCK,
@@ -1194,7 +1194,7 @@ var Tests = []test.SpecInterface{
 			NewPayloads{}, // Send new payload so the parent is unknown to the secondary client
 			SendBlobTransactions{
 				BlobTransactionSendCount:      TARGET_BLOBS_PER_BLOCK,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 			NewPayloads{
 				ExpectedIncludedBlobCount: TARGET_BLOBS_PER_BLOCK,
@@ -1246,22 +1246,22 @@ var Tests = []test.SpecInterface{
 		},
 	},
 
-	// DataGasUsed, ExcessDataGas Negative Tests
+	// BlobGasUsed, ExcessBlobGas Negative Tests
 	// Most cases are contained in https://github.com/ethereum/execution-spec-tests/tree/main/tests/eips/eip4844
 	// and can be executed using `pyspec` simulator.
 	&BlobsBaseSpec{
 
 		Spec: test.Spec{
-			Name: "Incorrect DataGasUsed: Non-Zero on Zero Blobs",
+			Name: "Incorrect BlobGasUsed: Non-Zero on Zero Blobs",
 			About: `
-			Send a payload with zero blobs, but non-zero DataGasUsed.
+			Send a payload with zero blobs, but non-zero BlobGasUsed.
 			`,
 		},
 		TestSequence: TestSequence{
 			NewPayloads{
 				ExpectedIncludedBlobCount: 0,
 				PayloadCustomizer: &helper.CustomPayloadData{
-					DataGasUsed: pUint64(1),
+					BlobGasUsed: pUint64(1),
 				},
 			},
 		},
@@ -1269,16 +1269,16 @@ var Tests = []test.SpecInterface{
 	&BlobsBaseSpec{
 
 		Spec: test.Spec{
-			Name: "Incorrect DataGasUsed: DATA_GAS_PER_BLOB on Zero Blobs",
+			Name: "Incorrect BlobGasUsed: GAS_PER_BLOB on Zero Blobs",
 			About: `
-			Send a payload with zero blobs, but non-zero DataGasUsed.
+			Send a payload with zero blobs, but non-zero BlobGasUsed.
 			`,
 		},
 		TestSequence: TestSequence{
 			NewPayloads{
 				ExpectedIncludedBlobCount: 0,
 				PayloadCustomizer: &helper.CustomPayloadData{
-					DataGasUsed: pUint64(DATA_GAS_PER_BLOB),
+					BlobGasUsed: pUint64(GAS_PER_BLOB),
 				},
 			},
 		},
@@ -1300,7 +1300,7 @@ var Tests = []test.SpecInterface{
 			// Send multiple transactions with multiple blobs each
 			SendBlobTransactions{
 				BlobTransactionSendCount:      1,
-				BlobTransactionMaxDataGasCost: big.NewInt(1),
+				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 			DevP2PRequestPooledTransactionHash{
 				ClientIndex:                 0,

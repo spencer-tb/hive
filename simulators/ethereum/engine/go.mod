@@ -4,7 +4,8 @@ go 1.20
 
 require (
 	github.com/crate-crypto/go-kzg-4844 v0.3.0
-	github.com/ethereum/go-ethereum v1.12.0
+	github.com/davecgh/go-spew v1.1.1
+	github.com/ethereum/go-ethereum v1.12.1-0.20230724161334-2274a03e339f
 	github.com/ethereum/hive v0.0.0-20230313141339-8e3200bfc09e
 	github.com/golang-jwt/jwt/v4 v4.4.3
 	github.com/pkg/errors v0.9.1
@@ -27,7 +28,6 @@ require (
 	github.com/consensys/bavard v0.1.13 // indirect
 	github.com/consensys/gnark-crypto v0.11.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/deckarep/golang-set/v2 v2.1.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 // indirect
 	github.com/deepmap/oapi-codegen v1.12.4 // indirect
@@ -94,5 +94,3 @@ require (
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
-
-replace github.com/ethereum/go-ethereum => github.com/marioevz/go-ethereum v1.10.14-0.20230614003945-ca2054da1293

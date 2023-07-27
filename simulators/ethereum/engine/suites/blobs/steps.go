@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/hive/simulators/ethereum/engine/client"
@@ -141,7 +140,7 @@ type VersionedHashes struct {
 	HashVersions []byte
 }
 
-func (v *VersionedHashes) VersionedHashes() ([]common.Hash, error) {
+func (v *VersionedHashes) VersionedHashes() (*[]common.Hash, error) {
 	if v.Blobs == nil {
 		return nil, nil
 	}
@@ -161,7 +160,7 @@ func (v *VersionedHashes) VersionedHashes() ([]common.Hash, error) {
 
 	}
 
-	return versionedHashes, nil
+	return &versionedHashes, nil
 }
 
 func (v *VersionedHashes) Description() string {
@@ -191,7 +190,7 @@ type BlobWrapData struct {
 	Proof         typ.KZGProof
 }
 
-func GetBlobDataInPayload(pool *TestBlobTxPool, payload *engine.ExecutableData) ([]*typ.TransactionWithBlobData, []*BlobWrapData, error) {
+func GetBlobDataInPayload(pool *TestBlobTxPool, payload *typ.ExecutableData) ([]*typ.TransactionWithBlobData, []*BlobWrapData, error) {
 	// Find all blob transactions included in the payload
 	var (
 		blobDataInPayload = make([]*BlobWrapData, 0)
@@ -254,35 +253,35 @@ func GetBlobDataInPayload(pool *TestBlobTxPool, payload *engine.ExecutableData) 
 	return blobTxsInPayload, blobDataInPayload, nil
 }
 
-func (step NewPayloads) VerifyPayload(ctx context.Context, forkConfig *globals.ForkConfig, testEngine *test.TestEngineClient, blobTxsInPayload []*typ.TransactionWithBlobData, payload *engine.ExecutableData, previousPayload *engine.ExecutableData) error {
+func (step NewPayloads) VerifyPayload(ctx context.Context, forkConfig *globals.ForkConfig, testEngine *test.TestEngineClient, blobTxsInPayload []*typ.TransactionWithBlobData, payload *typ.ExecutableData, previousPayload *typ.ExecutableData) error {
 	var (
-		parentExcessDataGas = uint64(0)
-		parentDataGasUsed   = uint64(0)
+		parentExcessBlobGas = uint64(0)
+		parentBlobGasUsed   = uint64(0)
 	)
 	if previousPayload != nil {
-		if previousPayload.ExcessDataGas != nil {
-			parentExcessDataGas = *previousPayload.ExcessDataGas
+		if previousPayload.ExcessBlobGas != nil {
+			parentExcessBlobGas = *previousPayload.ExcessBlobGas
 		}
-		if previousPayload.DataGasUsed != nil {
-			parentDataGasUsed = *previousPayload.DataGasUsed
+		if previousPayload.BlobGasUsed != nil {
+			parentBlobGasUsed = *previousPayload.BlobGasUsed
 		}
 	}
-	expectedExcessDataGas := CalcExcessDataGas(parentExcessDataGas, parentDataGasUsed)
+	expectedExcessBlobGas := CalcExcessBlobGas(parentExcessBlobGas, parentBlobGasUsed)
 
 	// TODO: check whether the new payload should be in cancun or not
 	if forkConfig.IsCancun(payload.Timestamp) {
-		if payload.ExcessDataGas == nil {
+		if payload.ExcessBlobGas == nil {
 			return fmt.Errorf("payload contains nil excessDataGas")
 		}
-		if payload.DataGasUsed == nil {
+		if payload.BlobGasUsed == nil {
 			return fmt.Errorf("payload contains nil dataGasUsed")
 		}
-		if *payload.ExcessDataGas != expectedExcessDataGas {
-			return fmt.Errorf("payload contains incorrect excessDataGas: want 0x%x, have 0x%x", expectedExcessDataGas, *payload.ExcessDataGas)
+		if *payload.ExcessBlobGas != expectedExcessBlobGas {
+			return fmt.Errorf("payload contains incorrect excessDataGas: want 0x%x, have 0x%x", expectedExcessBlobGas, *payload.ExcessBlobGas)
 		}
 
 		totalBlobCount := uint64(0)
-		expectedDataGasPrice := GetDataGasPrice(expectedExcessDataGas)
+		expectedBlobGasPrice := GetBlobGasPrice(expectedExcessBlobGas)
 
 		for _, tx := range blobTxsInPayload {
 			blobCount := uint64(len(tx.BlobHashes()))
@@ -290,9 +289,9 @@ func (step NewPayloads) VerifyPayload(ctx context.Context, forkConfig *globals.F
 
 			// Retrieve receipt from client
 			r := testEngine.TestTransactionReceipt(tx.Hash())
-			expectedDataGasUsed := blobCount * DATA_GAS_PER_BLOB
-			r.ExpectDataGasUsed(&expectedDataGasUsed)
-			r.ExpectDataGasPrice(&expectedDataGasPrice)
+			expectedBlobGasUsed := blobCount * GAS_PER_BLOB
+			r.ExpectBlobGasUsed(&expectedBlobGasUsed)
+			r.ExpectBlobGasPrice(&expectedBlobGasPrice)
 		}
 
 		if totalBlobCount != step.ExpectedIncludedBlobCount {
@@ -300,10 +299,10 @@ func (step NewPayloads) VerifyPayload(ctx context.Context, forkConfig *globals.F
 		}
 
 	} else {
-		if payload.ExcessDataGas != nil {
+		if payload.ExcessBlobGas != nil {
 			return fmt.Errorf("payload contains non-nil excessDataGas pre-fork")
 		}
-		if payload.DataGasUsed != nil {
+		if payload.BlobGasUsed != nil {
 			return fmt.Errorf("payload contains non-nil dataGasUsed pre-fork")
 		}
 	}
@@ -311,7 +310,7 @@ func (step NewPayloads) VerifyPayload(ctx context.Context, forkConfig *globals.F
 	return nil
 }
 
-func (step NewPayloads) VerifyBlobBundle(blobDataInPayload []*BlobWrapData, payload *engine.ExecutableData, blobBundle *typ.BlobsBundle) error {
+func (step NewPayloads) VerifyBlobBundle(blobDataInPayload []*BlobWrapData, payload *typ.ExecutableData, blobBundle *typ.BlobsBundle) error {
 
 	if len(blobBundle.Blobs) != len(blobBundle.Commitments) || len(blobBundle.Blobs) != len(blobBundle.Proofs) {
 		return fmt.Errorf("unexpected length in blob bundle: %d blobs, %d proofs, %d commitments", len(blobBundle.Blobs), len(blobBundle.Proofs), len(blobBundle.Commitments))
@@ -404,8 +403,8 @@ func (step NewPayloads) Execute(t *BlobTestContext) error {
 			OnNewPayloadBroadcast: func() {
 				// Send a test NewPayload directive with either a modified payload or modifed versioned hashes
 				var (
-					payload                       = &t.CLMock.LatestPayloadBuilt
-					versionedHashes []common.Hash = nil
+					payload                        = &t.CLMock.LatestPayloadBuilt
+					versionedHashes *[]common.Hash = nil
 					r               *test.NewPayloadResponseExpectObject
 					err             error
 				)
@@ -494,7 +493,7 @@ type SendBlobTransactions struct {
 	// Blobs per transaction
 	BlobsPerTransaction uint64
 	// Max Data Gas Cost for every blob transaction
-	BlobTransactionMaxDataGasCost *big.Int
+	BlobTransactionMaxBlobGasCost *big.Int
 	// Gas Fee Cap for every blob transaction
 	BlobTransactionGasFeeCap *big.Int
 	// Gas Tip Cap for every blob transaction
@@ -533,7 +532,7 @@ func (step SendBlobTransactions) Execute(t *BlobTestContext) error {
 			GasLimit:   100000,
 			GasTip:     step.BlobTransactionGasTipCap,
 			GasFee:     step.BlobTransactionGasFeeCap,
-			DataGasFee: step.BlobTransactionMaxDataGasCost,
+			BlobGasFee: step.BlobTransactionMaxBlobGasCost,
 			BlobCount:  blobCountPerTx,
 			BlobID:     t.CurrentBlobID,
 		}
@@ -575,7 +574,7 @@ func (step SendBlobTransactions) Execute(t *BlobTestContext) error {
 }
 
 func (step SendBlobTransactions) Description() string {
-	return fmt.Sprintf("SendBlobTransactions: %d Transactions, %d blobs each, %d max data gas fee", step.BlobTransactionSendCount, step.GetBlobsPerTransaction(), step.BlobTransactionMaxDataGasCost.Uint64())
+	return fmt.Sprintf("SendBlobTransactions: %d Transactions, %d blobs each, %d max data gas fee", step.BlobTransactionSendCount, step.GetBlobsPerTransaction(), step.BlobTransactionMaxBlobGasCost.Uint64())
 }
 
 // Send a modified version of the latest payload produced using NewPayloadV3

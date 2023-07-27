@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/holiman/uint256"
 )
 
 // Transaction interface
@@ -129,22 +130,22 @@ func (tx *TransactionWithBlobData) MarshalBinary() ([]byte, error) {
 
 	marshalBlobTx := MarshalType{
 		TxPayload: types.BlobTx{
-			ChainID:    tx.Tx.ChainId(),
+			ChainID:    uint256.MustFromBig(tx.Tx.ChainId()),
 			Nonce:      tx.Tx.Nonce(),
-			GasTipCap:  tx.Tx.GasTipCap(),
-			GasFeeCap:  tx.Tx.GasFeeCap(),
+			GasTipCap:  uint256.MustFromBig(tx.Tx.GasTipCap()),
+			GasFeeCap:  uint256.MustFromBig(tx.Tx.GasFeeCap()),
 			Gas:        tx.Tx.Gas(),
 			To:         to,
-			Value:      tx.Tx.Value(),
+			Value:      uint256.MustFromBig(tx.Tx.Value()),
 			Data:       tx.Tx.Data(),
 			AccessList: tx.Tx.AccessList(),
-			BlobFeeCap: tx.Tx.BlobGasFeeCap(),
+			BlobFeeCap: uint256.MustFromBig(tx.Tx.BlobGasFeeCap()),
 			BlobHashes: tx.Tx.BlobHashes(),
 
 			// Signature values
-			V: v,
-			R: r,
-			S: s,
+			V: uint256.MustFromBig(v),
+			R: uint256.MustFromBig(r),
+			S: uint256.MustFromBig(s),
 		},
 		Blobs:       tx.BlobData.Blobs,
 		Commitments: tx.BlobData.Commitments,

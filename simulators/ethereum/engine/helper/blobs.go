@@ -9,6 +9,7 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
 
 	gokzg4844 "github.com/crate-crypto/go-kzg-4844"
@@ -84,7 +85,7 @@ type BlobTransactionCreator struct {
 	GasLimit   uint64
 	GasFee     *big.Int
 	GasTip     *big.Int
-	DataGasFee *big.Int
+	BlobGasFee *big.Int
 	BlobID     BlobID
 	BlobCount  uint64
 	Value      *big.Int
@@ -266,19 +267,31 @@ func (tc *BlobTransactionCreator) MakeTransaction(nonce uint64) (typ.Transaction
 	if tc.To == nil {
 		return nil, errors.New("nil to address")
 	}
-	address := *tc.To
 
-	// Chain ID
-	chainID := new(big.Int).Set(globals.ChainID)
-
-	gasFeeCap := tc.GasFee
-	if gasFeeCap == nil {
-		gasFeeCap = globals.GasPrice
+	// Collect fields for transaction
+	var (
+		address    = *tc.To
+		chainID    = uint256.MustFromBig(globals.ChainID)
+		gasFeeCap  *uint256.Int
+		gasTipCap  *uint256.Int
+		value      *uint256.Int
+		blobGasFee *uint256.Int
+	)
+	if tc.GasFee != nil {
+		gasFeeCap = uint256.MustFromBig(tc.GasFee)
+	} else {
+		gasFeeCap = uint256.MustFromBig(globals.GasPrice)
 	}
-
-	gasTipCap := tc.GasTip
-	if gasTipCap == nil {
-		gasTipCap = globals.GasTipPrice
+	if tc.GasTip != nil {
+		gasTipCap = uint256.MustFromBig(tc.GasTip)
+	} else {
+		gasTipCap = uint256.MustFromBig(globals.GasTipPrice)
+	}
+	if tc.Value != nil {
+		value = uint256.MustFromBig(tc.Value)
+	}
+	if tc.BlobGasFee != nil {
+		blobGasFee = uint256.MustFromBig(tc.BlobGasFee)
 	}
 
 	sbtx := &types.BlobTx{
@@ -288,10 +301,10 @@ func (tc *BlobTransactionCreator) MakeTransaction(nonce uint64) (typ.Transaction
 		GasFeeCap:  gasFeeCap,
 		Gas:        tc.GasLimit,
 		To:         address,
-		Value:      tc.Value,
+		Value:      value,
 		Data:       tc.Data,
 		AccessList: nil,
-		BlobFeeCap: tc.DataGasFee,
+		BlobFeeCap: blobGasFee,
 		BlobHashes: hashes,
 	}
 

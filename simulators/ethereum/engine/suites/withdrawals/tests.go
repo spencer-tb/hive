@@ -1566,7 +1566,7 @@ func (ws *WithdrawalsReorgSpec) Execute(t *test.Env) {
 		sidechainStartAccount       = new(big.Int).SetBit(common.Big0, 160, 1)
 		sidechainNextIndex          = uint64(0)
 		sidechainWithdrawalsHistory = make(WithdrawalsHistory)
-		sidechain                   = make(map[uint64]*beacon.ExecutableData)
+		sidechain                   = make(map[uint64]*typ.ExecutableData)
 		sidechainPayloadId          *beacon.PayloadID
 	)
 
@@ -1666,7 +1666,7 @@ func (ws *WithdrawalsReorgSpec) Execute(t *test.Env) {
 		OnGetPayload: func() {
 			var (
 				version int
-				payload *beacon.ExecutableData
+				payload *typ.ExecutableData
 			)
 			if t.CLMock.CurrentPayloadNumber >= ws.GetSidechainWithdrawalsForkHeight() {
 				version = 2
@@ -2007,7 +2007,7 @@ func (req GetPayloadBodyRequestByHashIndex) Verify(reqIndex int, testEngine *tes
 	defer func() {
 		testEngine.Logf("INFO: Ended GetPayloadBodyByHash request %d, %s", reqIndex, time.Since(startTime))
 	}()
-	payloads := make([]*beacon.ExecutableData, 0)
+	payloads := make([]*typ.ExecutableData, 0)
 	hashes := make([]common.Hash, 0)
 	if len(req.BlockNumbers) > 0 {
 		for _, n := range req.BlockNumbers {

@@ -162,7 +162,7 @@ type HiveRPCEngineClient struct {
 	latestPAttrSent    *api.PayloadAttributes
 	latestFcUResponse  *api.ForkChoiceResponse
 
-	latestPayloadSent          *api.ExecutableData
+	latestPayloadSent          *typ.ExecutableData
 	latestPayloadStatusReponse *api.PayloadStatusV1
 
 	// Test account nonces
@@ -364,9 +364,9 @@ func (ec *HiveRPCEngineClient) ForkchoiceUpdatedV2(ctx context.Context, fcState 
 
 // Get Payload API Calls
 
-func (ec *HiveRPCEngineClient) GetPayload(ctx context.Context, version int, payloadId *api.PayloadID) (api.ExecutableData, *big.Int, *typ.BlobsBundle, error) {
+func (ec *HiveRPCEngineClient) GetPayload(ctx context.Context, version int, payloadId *api.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, error) {
 	var (
-		executableData api.ExecutableData
+		executableData typ.ExecutableData
 		blockValue     *big.Int
 		blobsBundle    *typ.BlobsBundle
 		err            error
@@ -392,17 +392,17 @@ func (ec *HiveRPCEngineClient) GetPayload(ctx context.Context, version int, payl
 	return executableData, blockValue, blobsBundle, err
 }
 
-func (ec *HiveRPCEngineClient) GetPayloadV1(ctx context.Context, payloadId *api.PayloadID) (api.ExecutableData, error) {
+func (ec *HiveRPCEngineClient) GetPayloadV1(ctx context.Context, payloadId *api.PayloadID) (typ.ExecutableData, error) {
 	ed, _, _, err := ec.GetPayload(ctx, 1, payloadId)
 	return ed, err
 }
 
-func (ec *HiveRPCEngineClient) GetPayloadV2(ctx context.Context, payloadId *api.PayloadID) (api.ExecutableData, *big.Int, error) {
+func (ec *HiveRPCEngineClient) GetPayloadV2(ctx context.Context, payloadId *api.PayloadID) (typ.ExecutableData, *big.Int, error) {
 	ed, bv, _, err := ec.GetPayload(ctx, 2, payloadId)
 	return ed, bv, err
 }
 
-func (ec *HiveRPCEngineClient) GetPayloadV3(ctx context.Context, payloadId *api.PayloadID) (api.ExecutableData, *big.Int, *typ.BlobsBundle, error) {
+func (ec *HiveRPCEngineClient) GetPayloadV3(ctx context.Context, payloadId *api.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, error) {
 	return ec.GetPayload(ctx, 3, payloadId)
 }
 
@@ -448,7 +448,7 @@ func (ec *HiveRPCEngineClient) GetBlobsBundleV1(ctx context.Context, payloadId *
 }
 
 // New Payload API Call Methods
-func (ec *HiveRPCEngineClient) NewPayload(ctx context.Context, version int, payload interface{}, versionedHashes []common.Hash) (result api.PayloadStatusV1, err error) {
+func (ec *HiveRPCEngineClient) NewPayload(ctx context.Context, version int, payload interface{}, versionedHashes *[]common.Hash) (result api.PayloadStatusV1, err error) {
 	if err := ec.PrepareDefaultAuthCallToken(); err != nil {
 		return result, err
 	}
@@ -468,12 +468,12 @@ func (ec *HiveRPCEngineClient) NewPayloadV1(ctx context.Context, payload *typ.Ex
 	return ec.NewPayload(ctx, 1, payload, nil)
 }
 
-func (ec *HiveRPCEngineClient) NewPayloadV2(ctx context.Context, payload *api.ExecutableData) (api.PayloadStatusV1, error) {
+func (ec *HiveRPCEngineClient) NewPayloadV2(ctx context.Context, payload *typ.ExecutableData) (api.PayloadStatusV1, error) {
 	ec.latestPayloadSent = payload
 	return ec.NewPayload(ctx, 2, payload, nil)
 }
 
-func (ec *HiveRPCEngineClient) NewPayloadV3(ctx context.Context, payload *api.ExecutableData, versionedHashes []common.Hash) (api.PayloadStatusV1, error) {
+func (ec *HiveRPCEngineClient) NewPayloadV3(ctx context.Context, payload *typ.ExecutableData, versionedHashes *[]common.Hash) (api.PayloadStatusV1, error) {
 	ec.latestPayloadSent = payload
 	return ec.NewPayload(ctx, 3, payload, versionedHashes)
 }
@@ -603,7 +603,7 @@ func (ec *HiveRPCEngineClient) LatestForkchoiceSent() (fcState *api.ForkchoiceSt
 	return ec.latestFcUStateSent, ec.latestPAttrSent
 }
 
-func (ec *HiveRPCEngineClient) LatestNewPayloadSent() *api.ExecutableData {
+func (ec *HiveRPCEngineClient) LatestNewPayloadSent() *typ.ExecutableData {
 	return ec.latestPayloadSent
 }
 

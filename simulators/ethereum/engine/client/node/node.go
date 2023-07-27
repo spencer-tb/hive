@@ -155,7 +155,7 @@ type GethNode struct {
 	latestPAttrSent    *beacon.PayloadAttributes
 	latestFcUResponse  *beacon.ForkChoiceResponse
 
-	latestPayloadSent          *beacon.ExecutableData
+	latestPayloadSent          *typ.ExecutableData
 	latestPayloadStatusReponse *beacon.PayloadStatusV1
 
 	// Test specific configuration
@@ -398,7 +398,7 @@ func (n *GethNode) SetBlock(block *types.Block, parentNumber uint64, parentRoot 
 		failedProcessing = true
 	}
 	rawdb.WriteReceipts(n.eth.ChainDb(), block.Hash(), block.NumberU64(), receipts)
-	root, err := statedb.Commit(false)
+	root, err := statedb.Commit(block.NumberU64(), false)
 	if err != nil {
 		return err
 	}
@@ -432,7 +432,7 @@ func (n *GethNode) SetBlock(block *types.Block, parentNumber uint64, parentRoot 
 }
 
 // Engine API
-func (n *GethNode) NewPayload(ctx context.Context, version int, pl interface{}, vh []common.Hash) (beacon.PayloadStatusV1, error) {
+func (n *GethNode) NewPayload(ctx context.Context, version int, pl interface{}, vh *[]common.Hash) (beacon.PayloadStatusV1, error) {
 	switch version {
 	case 1:
 		if c, ok := pl.(*typ.ExecutableDataV1); ok {
@@ -441,13 +441,13 @@ func (n *GethNode) NewPayload(ctx context.Context, version int, pl interface{}, 
 			return beacon.PayloadStatusV1{}, fmt.Errorf("wrong type %T", pl)
 		}
 	case 2:
-		if c, ok := pl.(*beacon.ExecutableData); ok {
+		if c, ok := pl.(*typ.ExecutableData); ok {
 			return n.NewPayloadV2(ctx, c)
 		} else {
 			return beacon.PayloadStatusV1{}, fmt.Errorf("wrong type %T", pl)
 		}
 	case 3:
-		if c, ok := pl.(*beacon.ExecutableData); ok {
+		if c, ok := pl.(*typ.ExecutableData); ok {
 			return n.NewPayloadV3(ctx, c, vh)
 		} else {
 			return beacon.PayloadStatusV1{}, fmt.Errorf("wrong type %T", pl)
@@ -459,21 +459,33 @@ func (n *GethNode) NewPayload(ctx context.Context, version int, pl interface{}, 
 func (n *GethNode) NewPayloadV1(ctx context.Context, pl *typ.ExecutableDataV1) (beacon.PayloadStatusV1, error) {
 	ed := pl.ToExecutableData()
 	n.latestPayloadSent = &ed
-	resp, err := n.api.NewPayloadV1(ed)
+	edConverted, err := typ.ToBeaconExecutableData(&ed)
+	if err != nil {
+		return beacon.PayloadStatusV1{}, err
+	}
+	resp, err := n.api.NewPayloadV1(edConverted)
 	n.latestPayloadStatusReponse = &resp
 	return resp, err
 }
 
-func (n *GethNode) NewPayloadV2(ctx context.Context, pl *beacon.ExecutableData) (beacon.PayloadStatusV1, error) {
+func (n *GethNode) NewPayloadV2(ctx context.Context, pl *typ.ExecutableData) (beacon.PayloadStatusV1, error) {
 	n.latestPayloadSent = pl
-	resp, err := n.api.NewPayloadV2(*pl)
+	ed, err := typ.ToBeaconExecutableData(pl)
+	if err != nil {
+		return beacon.PayloadStatusV1{}, err
+	}
+	resp, err := n.api.NewPayloadV2(ed)
 	n.latestPayloadStatusReponse = &resp
 	return resp, err
 }
 
-func (n *GethNode) NewPayloadV3(ctx context.Context, pl *beacon.ExecutableData, versionedHashes []common.Hash) (beacon.PayloadStatusV1, error) {
+func (n *GethNode) NewPayloadV3(ctx context.Context, pl *typ.ExecutableData, versionedHashes *[]common.Hash) (beacon.PayloadStatusV1, error) {
 	n.latestPayloadSent = pl
-	resp, err := n.api.NewPayloadV3(*pl, versionedHashes)
+	ed, err := typ.ToBeaconExecutableData(pl)
+	if err != nil {
+		return beacon.PayloadStatusV1{}, err
+	}
+	resp, err := n.api.NewPayloadV3(ed, versionedHashes)
 	n.latestPayloadStatusReponse = &resp
 	return resp, err
 }
@@ -505,28 +517,31 @@ func (n *GethNode) ForkchoiceUpdatedV2(ctx context.Context, fcs *beacon.Forkchoi
 	return fcr, err
 }
 
-func (n *GethNode) GetPayloadV1(ctx context.Context, payloadId *beacon.PayloadID) (beacon.ExecutableData, error) {
+func (n *GethNode) GetPayloadV1(ctx context.Context, payloadId *beacon.PayloadID) (typ.ExecutableData, error) {
 	p, err := n.api.GetPayloadV1(*payloadId)
 	if p == nil || err != nil {
-		return beacon.ExecutableData{}, err
+		return typ.ExecutableData{}, err
 	}
-	return *p, err
+	return typ.FromBeaconExecutableData(p)
 }
 
-func (n *GethNode) GetPayloadV2(ctx context.Context, payloadId *beacon.PayloadID) (beacon.ExecutableData, *big.Int, error) {
+func (n *GethNode) GetPayloadV2(ctx context.Context, payloadId *beacon.PayloadID) (typ.ExecutableData, *big.Int, error) {
 	p, err := n.api.GetPayloadV2(*payloadId)
 	if p == nil || err != nil {
-		return beacon.ExecutableData{}, nil, err
+		return typ.ExecutableData{}, nil, err
 	}
-	return *p.ExecutionPayload, p.BlockValue, err
+	ed, err := typ.FromBeaconExecutableData(p.ExecutionPayload)
+	return ed, p.BlockValue, err
 }
 
-func (n *GethNode) GetPayloadV3(ctx context.Context, payloadId *beacon.PayloadID) (beacon.ExecutableData, *big.Int, *typ.BlobsBundle, error) {
+func (n *GethNode) GetPayloadV3(ctx context.Context, payloadId *beacon.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, error) {
 	p, err := n.api.GetPayloadV3(*payloadId)
 	if p == nil || err != nil {
-		return beacon.ExecutableData{}, nil, nil, err
+		return typ.ExecutableData{}, nil, nil, err
 	}
-	return *p.ExecutionPayload, p.BlockValue, nil, err
+	ed, err := typ.FromBeaconExecutableData(p.ExecutionPayload)
+	// TODO: Convert and return the blobs bundle
+	return ed, p.BlockValue, nil, err
 }
 
 func (n *GethNode) GetPayloadBodiesByRangeV1(ctx context.Context, start uint64, count uint64) ([]*typ.ExecutionPayloadBodyV1, error) {
@@ -756,7 +771,7 @@ func (n *GethNode) LatestForkchoiceSent() (fcState *beacon.ForkchoiceStateV1, pA
 	return n.latestFcUStateSent, n.latestPAttrSent
 }
 
-func (n *GethNode) LatestNewPayloadSent() (payload *beacon.ExecutableData) {
+func (n *GethNode) LatestNewPayloadSent() (payload *typ.ExecutableData) {
 	return n.latestPayloadSent
 }
 

@@ -847,8 +847,8 @@ func inconsistentForkchoiceStateGen(inconsistency string) func(t *test.Env) {
 		// Wait until TTD is reached by this client
 		t.CLMock.WaitForTTD()
 
-		canonicalPayloads := make([]*api.ExecutableData, 0)
-		alternativePayloads := make([]*api.ExecutableData, 0)
+		canonicalPayloads := make([]*typ.ExecutableData, 0)
+		alternativePayloads := make([]*typ.ExecutableData, 0)
 		// Produce blocks before starting the test
 		t.CLMock.ProduceBlocks(3, clmock.BlockProcessCallbacks{
 			OnGetPayload: func() {
@@ -1051,7 +1051,7 @@ func badHashOnNewPayloadGen(syncing bool, sidechain bool) func(*test.Env) {
 		t.CLMock.ProduceBlocks(5, clmock.BlockProcessCallbacks{})
 
 		var (
-			alteredPayload     api.ExecutableData
+			alteredPayload     typ.ExecutableData
 			invalidPayloadHash common.Hash
 		)
 
@@ -1208,7 +1208,7 @@ func invalidPayloadTestCaseGen(payloadField helper.InvalidPayloadBlockField, syn
 		}
 
 		var (
-			alteredPayload *api.ExecutableData
+			alteredPayload *typ.ExecutableData
 			err            error
 		)
 
@@ -1390,7 +1390,7 @@ func invalidMissingAncestorReOrgGen(invalid_index int, payloadField helper.Inval
 		n := 10
 
 		// Slice to save the side B chain
-		altChainPayloads := make([]*api.ExecutableData, 0)
+		altChainPayloads := make([]*typ.ExecutableData, 0)
 
 		// Append the common ancestor
 		altChainPayloads = append(altChainPayloads, &cA)
@@ -1424,7 +1424,7 @@ func invalidMissingAncestorReOrgGen(invalid_index int, payloadField helper.Inval
 			},
 			OnGetPayload: func() {
 				var (
-					sidePayload *api.ExecutableData
+					sidePayload *typ.ExecutableData
 					err         error
 				)
 				// Insert extraData to ensure we deviate from the main payload, which contains empty extradata
@@ -1583,7 +1583,7 @@ func (spec InvalidMissingAncestorReOrgSpec) GenerateSync() func(*test.Env) {
 			cA = b
 		} else {
 			t.CLMock.ProduceBlocks(int(cAHeight.Int64()), clmock.BlockProcessCallbacks{})
-			cA, err = api.ExecutableDataToBlock(t.CLMock.LatestPayloadBuilt, nil)
+			cA, err = typ.ExecutableDataToBlock(t.CLMock.LatestPayloadBuilt, nil)
 			if err != nil {
 				t.Fatalf("FAIL (%s): Error converting payload to block: %v", t.TestName, err)
 			}
@@ -1631,7 +1631,7 @@ func (spec InvalidMissingAncestorReOrgSpec) GenerateSync() func(*test.Env) {
 			},
 			OnGetPayload: func() {
 				var (
-					sidePayload *api.ExecutableData
+					sidePayload *typ.ExecutableData
 					err         error
 				)
 				// Insert extraData to ensure we deviate from the main payload, which contains empty extradata
@@ -1651,7 +1651,7 @@ func (spec InvalidMissingAncestorReOrgSpec) GenerateSync() func(*test.Env) {
 					}
 				}
 
-				sideBlock, err := api.ExecutableDataToBlock(*sidePayload, nil)
+				sideBlock, err := typ.ExecutableDataToBlock(*sidePayload, nil)
 				if err != nil {
 					t.Fatalf("FAIL (%s): Error converting payload to block: %v", t.TestName, err)
 				}
@@ -1660,7 +1660,7 @@ func (spec InvalidMissingAncestorReOrgSpec) GenerateSync() func(*test.Env) {
 					if spec.PayloadField == helper.InvalidOmmers {
 						if unclePayload, ok := t.CLMock.ExecutedPayloadHistory[sideBlock.NumberU64()-1]; ok && unclePayload != nil {
 							// Uncle is a PoS payload
-							uncle, err = api.ExecutableDataToBlock(*unclePayload, nil)
+							uncle, err = typ.ExecutableDataToBlock(*unclePayload, nil)
 							if err != nil {
 								t.Fatalf("FAIL (%s): Unable to get uncle block: %v", t.TestName, err)
 							}
@@ -1699,9 +1699,9 @@ func (spec InvalidMissingAncestorReOrgSpec) GenerateSync() func(*test.Env) {
 						ctx, cancel := context.WithTimeout(t.TestContext, globals.RPCTimeout)
 						defer cancel()
 
-						p := api.BlockToExecutableData(altChainPayloads[i], common.Big0).ExecutionPayload
+						p := typ.BlockToExecutableData(altChainPayloads[i], common.Big0)
 						pv1 := &typ.ExecutableDataV1{}
-						pv1.FromExecutableData(p)
+						pv1.FromExecutableData(&p)
 						status, err := secondaryClient.NewPayloadV1(ctx, pv1)
 						if err != nil {
 							t.Fatalf("FAIL (%s): TEST ISSUE - Unable to send new payload: %v", t.TestName, err)
@@ -1764,8 +1764,8 @@ func (spec InvalidMissingAncestorReOrgSpec) GenerateSync() func(*test.Env) {
 				}
 				// If we are syncing through p2p, we need to keep polling until the client syncs the missing payloads
 				for {
-					ed := api.BlockToExecutableData(altChainPayloads[n], common.Big0, nil, nil, nil)
-					r := t.TestEngine.TestEngineNewPayloadV1(ed.ExecutionPayload)
+					ed := typ.BlockToExecutableData(altChainPayloads[n], common.Big0)
+					r := t.TestEngine.TestEngineNewPayloadV1(&ed)
 					t.Logf("INFO (%s): Response from main client: %v", t.TestName, r.Status)
 					s := t.TestEngine.TestEngineForkchoiceUpdatedV1(&api.ForkchoiceStateV1{
 						HeadBlockHash:      altChainPayloads[n].Hash(),
@@ -2089,7 +2089,7 @@ func reorgPrevValidatedPayloadOnSideChain(t *test.Env) {
 	t.CLMock.ProduceBlocks(5, clmock.BlockProcessCallbacks{})
 
 	var (
-		sidechainPayloads     = make([]*api.ExecutableData, 0)
+		sidechainPayloads     = make([]*typ.ExecutableData, 0)
 		sidechainPayloadCount = 5
 	)
 
@@ -2153,7 +2153,7 @@ func safeReorgToSideChain(t *test.Env) {
 	t.CLMock.WaitForTTD()
 
 	// Produce an alternative chain
-	sidechainPayloads := make([]*api.ExecutableData, 0)
+	sidechainPayloads := make([]*typ.ExecutableData, 0)
 
 	// Produce three payloads `P1`, `P2`, `P3`, along with the side chain payloads `P2'`, `P3'`
 	// First payload is finalized so no alternative payload
@@ -2220,7 +2220,7 @@ func reorgBackFromSyncing(t *test.Env) {
 	t.CLMock.WaitForTTD()
 
 	// Produce an alternative chain
-	sidechainPayloads := make([]*api.ExecutableData, 0)
+	sidechainPayloads := make([]*typ.ExecutableData, 0)
 	t.CLMock.ProduceBlocks(10, clmock.BlockProcessCallbacks{
 		OnGetPayload: func() {
 			// Generate an alternative payload by simply adding extraData to the block
@@ -2280,7 +2280,7 @@ func transactionReorg(t *test.Env) {
 
 	for i := 0; i < txCount; i++ {
 		var (
-			noTxnPayload api.ExecutableData
+			noTxnPayload typ.ExecutableData
 			tx           typ.Transaction
 		)
 		// Generate two payloads, one with the transaction and the other one without it
@@ -2393,8 +2393,8 @@ func transactionReorgBlockhash(newNPOnRevert bool) func(t *test.Env) {
 
 		for i := 0; i < txCount; i++ {
 			var (
-				mainPayload *api.ExecutableData
-				sidePayload *api.ExecutableData
+				mainPayload *typ.ExecutableData
+				sidePayload *typ.ExecutableData
 				tx          typ.Transaction
 			)
 
@@ -2742,7 +2742,7 @@ func inOrderPayloads(t *test.Env) {
 func validPayloadFcUSyncingClient(t *test.Env) {
 	var (
 		secondaryClient client.EngineClient
-		previousPayload api.ExecutableData
+		previousPayload typ.ExecutableData
 	)
 	{
 		// To allow sending the primary engine client into SYNCING state, we need a secondary client to guide the payload creation
@@ -2895,7 +2895,7 @@ func payloadBuildAfterNewInvalidPayload(t *test.Env) {
 			if t.CLMock.NextBlockProducer == invalidPayloadProducer.Engine {
 				invalidPayloadProducer = secondaryEngineTest
 			}
-			var inv_p *api.ExecutableData
+			var inv_p *typ.ExecutableData
 
 			{
 				// Get a payload from the invalid payload producer and invalidate it

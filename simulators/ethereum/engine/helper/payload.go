@@ -6,46 +6,49 @@ import (
 	"math/rand"
 	"strings"
 
-	api "github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/ethereum/hive/simulators/ethereum/engine/globals"
+	typ "github.com/ethereum/hive/simulators/ethereum/engine/types"
+	"github.com/pkg/errors"
 )
 
 type PayloadCustomizer interface {
-	CustomizePayload(basePayload *api.ExecutableData) (*api.ExecutableData, error)
+	CustomizePayload(basePayload *typ.ExecutableData) (*typ.ExecutableData, error)
 }
 
 type CustomPayloadData struct {
-	ParentHash          *common.Hash
-	FeeRecipient        *common.Address
-	StateRoot           *common.Hash
-	ReceiptsRoot        *common.Hash
-	LogsBloom           *[]byte
-	PrevRandao          *common.Hash
-	Number              *uint64
-	GasLimit            *uint64
-	GasUsed             *uint64
-	Timestamp           *uint64
-	ExtraData           *[]byte
-	BaseFeePerGas       *big.Int
-	BlockHash           *common.Hash
-	Transactions        *[][]byte
-	Withdrawals         types.Withdrawals
-	RemoveWithdrawals   bool
-	DataGasUsed         *uint64
-	RemoveDataGasUsed   bool
-	ExcessDataGas       *uint64
-	RemoveExcessDataGas bool
+	ParentHash                  *common.Hash
+	FeeRecipient                *common.Address
+	StateRoot                   *common.Hash
+	ReceiptsRoot                *common.Hash
+	LogsBloom                   *[]byte
+	PrevRandao                  *common.Hash
+	Number                      *uint64
+	GasLimit                    *uint64
+	GasUsed                     *uint64
+	Timestamp                   *uint64
+	ExtraData                   *[]byte
+	BaseFeePerGas               *big.Int
+	BlockHash                   *common.Hash
+	Transactions                *[][]byte
+	Withdrawals                 types.Withdrawals
+	RemoveWithdrawals           bool
+	BlobGasUsed                 *uint64
+	RemoveBlobGasUsed           bool
+	ExcessBlobGas               *uint64
+	RemoveExcessBlobGas         bool
+	ParentBeaconBlockRoot       *common.Hash
+	RemoveParentBeaconBlockRoot bool
 }
 
 var _ PayloadCustomizer = (*CustomPayloadData)(nil)
 
 // Construct a customized payload by taking an existing payload as base and mixing it CustomPayloadData
 // BlockHash is calculated automatically.
-func (customData *CustomPayloadData) CustomizePayload(basePayload *api.ExecutableData) (*api.ExecutableData, error) {
+func (customData *CustomPayloadData) CustomizePayload(basePayload *typ.ExecutableData) (*typ.ExecutableData, error) {
 	txs := basePayload.Transactions
 	if customData.Transactions != nil {
 		txs = *customData.Transactions
@@ -120,23 +123,26 @@ func (customData *CustomPayloadData) CustomizePayload(basePayload *api.Executabl
 		h := types.DeriveSha(types.Withdrawals(basePayload.Withdrawals), trie.NewStackTrie(nil))
 		customPayloadHeader.WithdrawalsHash = &h
 	}
-	if customData.RemoveDataGasUsed {
+	if customData.RemoveBlobGasUsed {
 		customPayloadHeader.DataGasUsed = nil
-	} else if customData.DataGasUsed != nil {
-		customPayloadHeader.DataGasUsed = customData.DataGasUsed
-	} else if basePayload.DataGasUsed != nil {
-		customPayloadHeader.DataGasUsed = basePayload.DataGasUsed
+	} else if customData.BlobGasUsed != nil {
+		customPayloadHeader.DataGasUsed = customData.BlobGasUsed
+	} else if basePayload.BlobGasUsed != nil {
+		customPayloadHeader.DataGasUsed = basePayload.BlobGasUsed
 	}
-	if customData.RemoveExcessDataGas {
+	if customData.RemoveExcessBlobGas {
 		customPayloadHeader.ExcessDataGas = nil
-	} else if customData.ExcessDataGas != nil {
-		customPayloadHeader.ExcessDataGas = customData.ExcessDataGas
-	} else if basePayload.ExcessDataGas != nil {
-		customPayloadHeader.ExcessDataGas = basePayload.ExcessDataGas
+	} else if customData.ExcessBlobGas != nil {
+		customPayloadHeader.ExcessDataGas = customData.ExcessBlobGas
+	} else if basePayload.ExcessBlobGas != nil {
+		customPayloadHeader.ExcessDataGas = basePayload.ExcessBlobGas
+	}
+	if customData.ParentBeaconBlockRoot != nil {
+		return nil, errors.New("ParentBeaconBlockRoot is not supported")
 	}
 
 	// Return the new payload
-	result := &api.ExecutableData{
+	result := &typ.ExecutableData{
 		ParentHash:    customPayloadHeader.ParentHash,
 		FeeRecipient:  customPayloadHeader.Coinbase,
 		StateRoot:     customPayloadHeader.Root,
@@ -151,8 +157,8 @@ func (customData *CustomPayloadData) CustomizePayload(basePayload *api.Executabl
 		BaseFeePerGas: customPayloadHeader.BaseFee,
 		BlockHash:     customPayloadHeader.Hash(),
 		Transactions:  txs,
-		DataGasUsed:   customPayloadHeader.DataGasUsed,
-		ExcessDataGas: customPayloadHeader.ExcessDataGas,
+		BlobGasUsed:   customPayloadHeader.DataGasUsed,
+		ExcessBlobGas: customPayloadHeader.ExcessDataGas,
 	}
 	if customData.RemoveWithdrawals {
 		result.Withdrawals = nil
@@ -164,7 +170,7 @@ func (customData *CustomPayloadData) CustomizePayload(basePayload *api.Executabl
 	return result, nil
 }
 
-func CustomizePayloadTransactions(basePayload *api.ExecutableData, customTransactions types.Transactions) (*api.ExecutableData, error) {
+func CustomizePayloadTransactions(basePayload *typ.ExecutableData, customTransactions types.Transactions) (*typ.ExecutableData, error) {
 	byteTxs := make([][]byte, 0)
 	for _, tx := range customTransactions {
 		bytes, err := tx.MarshalBinary()
@@ -227,7 +233,7 @@ func (customData *CustomPayloadData) String() string {
 
 // This function generates an invalid payload by taking a base payload and modifying the specified field such that it ends up being invalid.
 // One small consideration is that the payload needs to contain transactions and specially transactions using the PREVRANDAO opcode for all the fields to be compatible with this function.
-func GenerateInvalidPayload(basePayload *api.ExecutableData, payloadField InvalidPayloadBlockField) (*api.ExecutableData, error) {
+func GenerateInvalidPayload(basePayload *typ.ExecutableData, payloadField InvalidPayloadBlockField) (*typ.ExecutableData, error) {
 
 	var customPayloadMod *CustomPayloadData
 	switch payloadField {

@@ -7,7 +7,6 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -16,9 +15,9 @@ var _ = (*executionPayloadEnvelopeMarshaling)(nil)
 // MarshalJSON marshals as JSON.
 func (e ExecutionPayloadEnvelope) MarshalJSON() ([]byte, error) {
 	type ExecutionPayloadEnvelope struct {
-		ExecutionPayload *engine.ExecutableData `json:"executionPayload" gencodec:"required"`
-		BlockValue       *hexutil.Big           `json:"blockValue"       gencodec:"required"`
-		BlobsBundle      *BlobsBundle           `json:"blobsBundle"      gencodec:"omitempty"`
+		ExecutionPayload *ExecutableData `json:"executionPayload" gencodec:"required"`
+		BlockValue       *hexutil.Big    `json:"blockValue"       gencodec:"required"`
+		BlobsBundle      *BlobsBundle    `json:"blobsBundle"      gencodec:"omitempty"`
 	}
 	var enc ExecutionPayloadEnvelope
 	enc.ExecutionPayload = e.ExecutionPayload
@@ -30,9 +29,9 @@ func (e ExecutionPayloadEnvelope) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON unmarshals from JSON.
 func (e *ExecutionPayloadEnvelope) UnmarshalJSON(input []byte) error {
 	type ExecutionPayloadEnvelope struct {
-		ExecutionPayload *engine.ExecutableData `json:"executionPayload" gencodec:"required"`
-		BlockValue       *hexutil.Big           `json:"blockValue"       gencodec:"required"`
-		BlobsBundle      *BlobsBundle           `json:"blobsBundle"      gencodec:"omitempty"`
+		ExecutionPayload *ExecutableData `json:"executionPayload" gencodec:"required"`
+		BlockValue       *hexutil.Big    `json:"blockValue"       gencodec:"required"`
+		BlobsBundle      *BlobsBundle    `json:"blobsBundle"      gencodec:"omitempty"`
 	}
 	var dec ExecutionPayloadEnvelope
 	if err := json.Unmarshal(input, &dec); err != nil {

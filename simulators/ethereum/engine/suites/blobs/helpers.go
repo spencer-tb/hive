@@ -29,32 +29,32 @@ func FakeExponential(factor, numerator, denominator uint64) uint64 {
 	return output / denominator
 }
 
-func GetDataGasPrice(excessDataGas uint64) uint64 {
-	return FakeExponential(MIN_DATA_GASPRICE, excessDataGas, DATA_GASPRICE_UPDATE_FRACTION)
+func GetBlobGasPrice(excessBlobGas uint64) uint64 {
+	return FakeExponential(MIN_DATA_GASPRICE, excessBlobGas, BLOB_GASPRICE_UPDATE_FRACTION)
 }
 
-func GetMinExcessDataGasForDataGasPrice(data_gas_price uint64) uint64 {
+func GetMinExcessBlobGasForBlobGasPrice(data_gas_price uint64) uint64 {
 	var (
 		current_excess_data_gas = uint64(0)
 		current_data_gas_price  = uint64(1)
 	)
 	for current_data_gas_price < data_gas_price {
-		current_excess_data_gas += DATA_GAS_PER_BLOB
-		current_data_gas_price = GetDataGasPrice(current_excess_data_gas)
+		current_excess_data_gas += GAS_PER_BLOB
+		current_data_gas_price = GetBlobGasPrice(current_excess_data_gas)
 	}
 
 	return current_excess_data_gas
 }
 
-func GetMinExcessDataBlobsForDataGasPrice(data_gas_price uint64) uint64 {
-	return GetMinExcessDataGasForDataGasPrice(data_gas_price) / DATA_GAS_PER_BLOB
+func GetMinExcessBlobsForBlobGasPrice(data_gas_price uint64) uint64 {
+	return GetMinExcessBlobGasForBlobGasPrice(data_gas_price) / GAS_PER_BLOB
 }
 
-func CalcExcessDataGas(parentExcessDataGas, parentDataGasUsed uint64) uint64 {
-	if (parentExcessDataGas + parentDataGasUsed) < TARGET_DATA_GAS_PER_BLOCK {
+func CalcExcessBlobGas(parentExcessBlobGas, parentBlobGasUsed uint64) uint64 {
+	if (parentExcessBlobGas + parentBlobGasUsed) < TARGET_BLOB_GAS_PER_BLOCK {
 		return 0
 	} else {
-		return (parentExcessDataGas + parentDataGasUsed) - TARGET_DATA_GAS_PER_BLOCK
+		return (parentExcessBlobGas + parentBlobGasUsed) - TARGET_BLOB_GAS_PER_BLOCK
 	}
 }
 

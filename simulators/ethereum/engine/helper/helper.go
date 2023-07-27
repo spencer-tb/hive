@@ -16,7 +16,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	api "github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/hive/simulators/ethereum/engine/client"
 	"github.com/ethereum/hive/simulators/ethereum/engine/globals"
 
@@ -97,7 +96,7 @@ const (
 	InvalidTransactionChainID     = "Transaction ChainID"
 )
 
-func TransactionInPayload(payload *api.ExecutableData, tx typ.Transaction) bool {
+func TransactionInPayload(payload *typ.ExecutableData, tx typ.Transaction) bool {
 	for _, bytesTx := range payload.Transactions {
 		var currentTx types.Transaction
 		if err := currentTx.UnmarshalBinary(bytesTx); err == nil {

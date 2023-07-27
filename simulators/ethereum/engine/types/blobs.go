@@ -147,7 +147,7 @@ type BlobsBundle struct {
 	Proofs      []KZGProof      `json:"proofs"      gencodec:"required"`
 }
 
-func (bb *BlobsBundle) VersionedHashes(commitmentVersion byte) ([]common.Hash, error) {
+func (bb *BlobsBundle) VersionedHashes(commitmentVersion byte) (*[]common.Hash, error) {
 	if bb == nil {
 		return nil, errors.New("nil blob bundle")
 	}
@@ -159,5 +159,5 @@ func (bb *BlobsBundle) VersionedHashes(commitmentVersion byte) ([]common.Hash, e
 		sha256Hash := sha256.Sum256(commitment[:])
 		versionedHashes[i] = common.BytesToHash(append([]byte{commitmentVersion}, sha256Hash[1:]...))
 	}
-	return versionedHashes, nil
+	return &versionedHashes, nil
 }

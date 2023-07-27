@@ -35,7 +35,7 @@ var (
 	BLOB_COMMITMENT_VERSION_KZG = byte(0x01)
 )
 
-type ExecutableDataHistory map[uint64]*api.ExecutableData
+type ExecutableDataHistory map[uint64]*typ.ExecutableData
 
 func (h ExecutableDataHistory) LatestPayloadNumber() uint64 {
 	latest := uint64(0)
@@ -95,11 +95,11 @@ type CLMocker struct {
 	// Latest broadcasted data using the PoS Engine API
 	LatestHeadNumber        *big.Int
 	LatestHeader            *types.Header
-	LatestPayloadBuilt      api.ExecutableData
+	LatestPayloadBuilt      typ.ExecutableData
 	LatestBlockValue        *big.Int
 	LatestBlobBundle        *typ.BlobsBundle
 	LatestPayloadAttributes api.PayloadAttributes
-	LatestExecutedPayload   api.ExecutableData
+	LatestExecutedPayload   typ.ExecutableData
 	LatestForkchoice        api.ForkchoiceStateV1
 
 	// Merge related
@@ -458,7 +458,7 @@ func (cl *CLMocker) GetNextPayload() {
 
 func (cl *CLMocker) broadcastNextNewPayload() {
 	// Check if we have blobs to include in the broadcast
-	var versionedHashes []common.Hash
+	var versionedHashes *[]common.Hash
 	if cl.LatestBlobBundle != nil {
 		// Broadcast the blob bundle to all clients
 		var err error
@@ -681,7 +681,7 @@ type ExecutePayloadOutcome struct {
 	Error                  error
 }
 
-func (cl *CLMocker) BroadcastNewPayload(payload *api.ExecutableData, versionedHashes []common.Hash) []ExecutePayloadOutcome {
+func (cl *CLMocker) BroadcastNewPayload(payload *typ.ExecutableData, versionedHashes *[]common.Hash) []ExecutePayloadOutcome {
 	responses := make([]ExecutePayloadOutcome, len(cl.EngineClients))
 	for i, ec := range cl.EngineClients {
 		responses[i].Container = ec.ID()
