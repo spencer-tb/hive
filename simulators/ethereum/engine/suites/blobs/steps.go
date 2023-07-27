@@ -582,7 +582,8 @@ type SendModifiedLatestPayload struct {
 	ClientID uint64
 	// Versioned hashes modification
 	VersionedHashes *VersionedHashes
-	// Expected status of the new payload request
+	// Expected responses on the NewPayload call
+	ExpectedError  *int
 	ExpectedStatus test.PayloadStatus
 }
 
@@ -603,7 +604,11 @@ func (step SendModifiedLatestPayload) Execute(t *BlobTestContext) error {
 	}
 	testEngine := t.TestEngines[step.ClientID]
 	r := testEngine.TestEngineNewPayloadV3(payload, versionedHashes)
-	r.ExpectStatus(step.ExpectedStatus)
+	if step.ExpectedError != nil {
+		r.ExpectErrorCode(*step.ExpectedError)
+	} else {
+		r.ExpectStatus(step.ExpectedStatus)
+	}
 	return nil
 }
 

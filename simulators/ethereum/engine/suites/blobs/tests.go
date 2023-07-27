@@ -537,8 +537,7 @@ var Tests = []test.SpecInterface{
 				VersionedHashes: &VersionedHashes{
 					Blobs: nil,
 				},
-				// On DEVNET 8:
-				// ExpectedError:             INVALID_PARAMS_ERROR,
+				ExpectedError: INVALID_PARAMS_ERROR,
 			},
 		},
 	},
@@ -590,33 +589,30 @@ var Tests = []test.SpecInterface{
 			},
 		},
 	},
-	/*
-		// Unspecified Outcome For Devnet 7, uncomment for Devnet 8
-		&BlobsBaseSpec{
-			Spec: test.Spec{
-				Name: "NewPayloadV3 Before Cancun, Nil Data Fields, Empty Array Versioned Hashes",
-				About: `
+	&BlobsBaseSpec{
+		Spec: test.Spec{
+			Name: "NewPayloadV3 Before Cancun, Nil Data Fields, Empty Array Versioned Hashes",
+			About: `
 				Test sending NewPayloadV3 Before Cancun with:
 				- nil ExcessBlobGas
 				- nil BlobGasUsed
 				- Empty Versioned Hashes Array
 				`,
-			},
+		},
 
-			CancunForkHeight: 2,
+		CancunForkHeight: 2,
 
-			TestSequence: TestSequence{
-				NewPayloads{
-					ExpectedIncludedBlobCount: 0,
-					Version:                   3,
-					VersionedHashes: &VersionedHashes{
-						Blobs: []helper.BlobID{},
-					},
-					ExpectedError: INVALID_PARAMS_ERROR,
+		TestSequence: TestSequence{
+			NewPayloads{
+				ExpectedIncludedBlobCount: 0,
+				Version:                   3,
+				VersionedHashes: &VersionedHashes{
+					Blobs: []helper.BlobID{},
 				},
+				ExpectedError: INVALID_PARAMS_ERROR,
 			},
 		},
-	*/
+	},
 	&BlobsBaseSpec{
 		Spec: test.Spec{
 			Name: "NewPayloadV3 Before Cancun, 0x00 Data Fields, Empty Array Versioned Hashes",
@@ -641,41 +637,12 @@ var Tests = []test.SpecInterface{
 					ExcessBlobGas: pUint64(0),
 					BlobGasUsed:   pUint64(0),
 				},
-				ExpectedError: INVALID_PARAMS_ERROR,
-				// On DEVNET 8:
-				// ExpectedError: UNSUPPORTED_FORK_ERROR,
+				ExpectedError: UNSUPPORTED_FORK_ERROR,
 			},
 		},
 	},
 
 	// NewPayloadV3 After Cancun, Negative Tests
-	/*
-		// Unspecified Outcome For Devnet 7, uncomment for Devnet 8
-		&BlobsBaseSpec{
-			Spec: test.Spec{
-				Name: "NewPayloadV3 After Cancun, 0x00 Data Fields, Nil Versioned Hashes",
-				About: `
-				Test sending NewPayloadV3 After Cancun with:
-				- 0x00 ExcessBlobGas
-				- 0x00 BlobGasUsed
-				- nil Versioned Hashes Array
-				`,
-			},
-
-			CancunForkHeight: 1,
-
-			TestSequence: TestSequence{
-				NewPayloads{
-					ExpectedIncludedBlobCount: 0,
-					Version:                   3,
-					VersionedHashes: &VersionedHashes{
-						Blobs: nil,
-					},
-					ExpectedError: INVALID_PARAMS_ERROR,
-				},
-			},
-		},
-	*/
 	&BlobsBaseSpec{
 		Spec: test.Spec{
 			Name: "NewPayloadV3 After Cancun, Nil ExcessBlobGas, 0x00 BlobGasUsed, Empty Array Versioned Hashes",
@@ -892,7 +859,7 @@ var Tests = []test.SpecInterface{
 				VersionedHashes: &VersionedHashes{
 					Blobs: nil,
 				},
-				ExpectedStatus: test.Invalid,
+				ExpectedError: INVALID_PARAMS_ERROR,
 			},
 		},
 	},
@@ -1177,7 +1144,7 @@ var Tests = []test.SpecInterface{
 				VersionedHashes: &VersionedHashes{
 					Blobs: nil,
 				},
-				ExpectedStatus: test.Invalid,
+				ExpectedError: INVALID_PARAMS_ERROR,
 			},
 		},
 	},
