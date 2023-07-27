@@ -184,8 +184,8 @@ func ToBeaconExecutableData(pl *ExecutableData) (geth_beacon.ExecutableData, err
 		BlockHash:     pl.BlockHash,
 		Transactions:  pl.Transactions,
 		Withdrawals:   pl.Withdrawals,
-		DataGasUsed:   pl.BlobGasUsed,
-		ExcessDataGas: pl.ExcessBlobGas,
+		BlobGasUsed:   pl.BlobGasUsed,
+		ExcessBlobGas: pl.ExcessBlobGas,
 	}, nil
 }
 
@@ -206,8 +206,8 @@ func FromBeaconExecutableData(ed *geth_beacon.ExecutableData) (ExecutableData, e
 		BlockHash:     ed.BlockHash,
 		Transactions:  ed.Transactions,
 		Withdrawals:   ed.Withdrawals,
-		BlobGasUsed:   ed.DataGasUsed,
-		ExcessBlobGas: ed.ExcessDataGas,
+		BlobGasUsed:   ed.BlobGasUsed,
+		ExcessBlobGas: ed.ExcessBlobGas,
 	}, nil
 }
 

@@ -56,8 +56,8 @@ func (bs *BlobsBaseSpec) GetGenesis() *core.Genesis {
 	genesis.ExtraData = []byte{}
 
 	if bs.CancunForkHeight == 0 {
-		genesis.DataGasUsed = pUint64(0)
-		genesis.ExcessDataGas = pUint64(0)
+		genesis.BlobGasUsed = pUint64(0)
+		genesis.ExcessBlobGas = pUint64(0)
 		// TODO (DEVNET 8): Add parent beacon block
 	}
 

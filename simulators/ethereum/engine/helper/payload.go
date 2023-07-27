@@ -124,18 +124,18 @@ func (customData *CustomPayloadData) CustomizePayload(basePayload *typ.Executabl
 		customPayloadHeader.WithdrawalsHash = &h
 	}
 	if customData.RemoveBlobGasUsed {
-		customPayloadHeader.DataGasUsed = nil
+		customPayloadHeader.BlobGasUsed = nil
 	} else if customData.BlobGasUsed != nil {
-		customPayloadHeader.DataGasUsed = customData.BlobGasUsed
+		customPayloadHeader.BlobGasUsed = customData.BlobGasUsed
 	} else if basePayload.BlobGasUsed != nil {
-		customPayloadHeader.DataGasUsed = basePayload.BlobGasUsed
+		customPayloadHeader.BlobGasUsed = basePayload.BlobGasUsed
 	}
 	if customData.RemoveExcessBlobGas {
-		customPayloadHeader.ExcessDataGas = nil
+		customPayloadHeader.ExcessBlobGas = nil
 	} else if customData.ExcessBlobGas != nil {
-		customPayloadHeader.ExcessDataGas = customData.ExcessBlobGas
+		customPayloadHeader.ExcessBlobGas = customData.ExcessBlobGas
 	} else if basePayload.ExcessBlobGas != nil {
-		customPayloadHeader.ExcessDataGas = basePayload.ExcessBlobGas
+		customPayloadHeader.ExcessBlobGas = basePayload.ExcessBlobGas
 	}
 	if customData.ParentBeaconBlockRoot != nil {
 		return nil, errors.New("ParentBeaconBlockRoot is not supported")
@@ -157,8 +157,8 @@ func (customData *CustomPayloadData) CustomizePayload(basePayload *typ.Executabl
 		BaseFeePerGas: customPayloadHeader.BaseFee,
 		BlockHash:     customPayloadHeader.Hash(),
 		Transactions:  txs,
-		BlobGasUsed:   customPayloadHeader.DataGasUsed,
-		ExcessBlobGas: customPayloadHeader.ExcessDataGas,
+		BlobGasUsed:   customPayloadHeader.BlobGasUsed,
+		ExcessBlobGas: customPayloadHeader.ExcessBlobGas,
 	}
 	if customData.RemoveWithdrawals {
 		result.Withdrawals = nil
