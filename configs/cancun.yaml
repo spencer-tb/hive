@@ -15,7 +15,7 @@
   nametag: cancun-4844-only-git
   dockerfile: git
   build_args:
-      github: ethereum/go-ethereum
+      github: MariusVanDerWijden/go-ethereum
       tag: 4844-devnet-6
 
 - client: nethermind
