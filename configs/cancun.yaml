@@ -3,7 +3,7 @@
   dockerfile: git
   build_args:
       github: hyperledger/besu
-      tag: master
+      tag: main
 
 - client: ethereumjs
   nametag: cancun-4844-only-git
