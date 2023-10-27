@@ -2,20 +2,20 @@
   nametag: cancun-git
   dockerfile: git
   build_args:
-      github: spencer-tb/besu
+      github: hyperledger/besu
       tag: main
 
 - client: erigon
   nametag: cancun-git
   dockerfile: git
   build_args:
-      github: spencer-tb/erigon
+      github: ledgerwatch/erigon
       tag: devel
 
 - client: ethereumjs
   nametag: cancun-git
   build_args:
-      github: spencer-tb/ethereumjs-monorepo
+      github: ethereumjs/ethereumjs-monorepo
       tag: master
 
 - client: go-ethereum
