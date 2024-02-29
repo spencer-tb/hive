@@ -79,6 +79,10 @@ if [ -n "$HIVE_BOOTNODE" ]; then
     echo "[\"$HIVE_BOOTNODE\"]" > /nethermind/Data/static-nodes.json
 fi
 
+if [ "$HIVE_NODETYPE" == "snap" ]; then
+    FLAGS="$FLAGS --Sync.SnapServingEnabled true --Sync.SnapSync true"
+fi
+
 # Configure logging.
 LOG_FLAG=""
 if [ "$HIVE_LOGLEVEL" != "" ]; then
