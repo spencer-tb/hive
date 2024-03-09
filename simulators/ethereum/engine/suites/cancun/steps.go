@@ -811,8 +811,6 @@ type DevP2PRequestPooledTransactionHash struct {
 	ClientIndex uint64
 	// Transaction Index to request
 	TransactionIndexes []uint64
-	// Wait for a new pooled transaction message before actually requesting the transaction
-	WaitForNewPooledTransaction bool
 }
 
 func (step DevP2PRequestPooledTransactionHash) Execute(t *CancunTestContext) error {
@@ -846,48 +844,6 @@ func (step DevP2PRequestPooledTransactionHash) Execute(t *CancunTestContext) err
 
 	// Timeout value for all requests
 	timeout := 20 * time.Second
-
-	// Wait for a new pooled transaction message
-	if step.WaitForNewPooledTransaction {
-		msg, err := conn.WaitForResponse(timeout, 0)
-		if err != nil {
-			return errors.Wrap(err, "error waiting for response")
-		}
-		switch msg := msg.(type) {
-		case *devp2p.NewPooledTransactionHashes:
-			if len(msg.Hashes) != len(txHashes) {
-				return fmt.Errorf("expected %d hashes, got %d", len(txHashes), len(msg.Hashes))
-			}
-			if len(msg.Types) != len(txHashes) {
-				return fmt.Errorf("expected %d types, got %d", len(txHashes), len(msg.Types))
-			}
-			if len(msg.Sizes) != len(txHashes) {
-				return fmt.Errorf("expected %d sizes, got %d", len(txHashes), len(msg.Sizes))
-			}
-			for i := 0; i < len(txHashes); i++ {
-				hash, typ, size := msg.Hashes[i], msg.Types[i], msg.Sizes[i]
-				// Get the transaction
-				tx, ok := t.TestBlobTxPool.Transactions[hash]
-				if !ok {
-					return fmt.Errorf("transaction %s not found", hash.String())
-				}
-
-				if typ != tx.Type() {
-					return fmt.Errorf("expected type %d, got %d", tx.Type(), typ)
-				}
-
-				b, err := tx.MarshalBinary()
-				if err != nil {
-					return errors.Wrap(err, "error marshaling transaction")
-				}
-				if size != uint32(len(b)) {
-					return fmt.Errorf("expected size %d, got %d", len(b), size)
-				}
-			}
-		default:
-			return fmt.Errorf("unexpected message type: %T", msg)
-		}
-	}
 
 	// Send the request for the pooled transactions
 	getTxReq := &devp2p.GetPooledTransactions{

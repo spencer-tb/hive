@@ -1780,9 +1780,8 @@ var Tests = []test.Spec{
 				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 			DevP2PRequestPooledTransactionHash{
-				ClientIndex:                 0,
-				TransactionIndexes:          []uint64{0},
-				WaitForNewPooledTransaction: true,
+				ClientIndex:        0,
+				TransactionIndexes: []uint64{0},
 			},
 		},
 	},
