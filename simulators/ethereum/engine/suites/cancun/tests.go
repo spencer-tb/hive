@@ -1774,7 +1774,11 @@ var Tests = []test.Spec{
 			NewPayloads{
 				PayloadCount: 1,
 			},
-			// Send multiple transactions with multiple blobs each
+			// Peer before sending blob tx
+			DevP2PClientPeering{
+				ClientIndex: 0,
+			},
+			// Send single blob transaction
 			SendBlobTransactions{
 				TransactionCount:              1,
 				BlobTransactionMaxBlobGasCost: big.NewInt(1),
