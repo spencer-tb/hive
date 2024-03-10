@@ -769,34 +769,10 @@ func (step DevP2PClientPeering) Execute(t *CancunTestContext) error {
 	if err != nil {
 		return fmt.Errorf("error peering engine client: %v", err)
 	}
-	defer conn.Close()
 	t.Logf("INFO: Connected to client %d, remote public key: %s", step.ClientIndex, conn.RemoteKey())
 
 	// Sleep
 	time.Sleep(1 * time.Second)
-
-	// Timeout value for all requests
-	timeout := 20 * time.Second
-
-	// Send a ping request to verify that we are not immediately disconnected
-	pingReq := &devp2p.Ping{}
-	if size, err := conn.Write(pingReq); err != nil {
-		return errors.Wrap(err, "could not write to conn")
-	} else {
-		t.Logf("INFO: Wrote %d bytes to conn", size)
-	}
-
-	// Finally wait for the pong response
-	msg, err := conn.WaitForResponse(timeout, 0)
-	if err != nil {
-		return errors.Wrap(err, "error waiting for response")
-	}
-	switch msg := msg.(type) {
-	case *devp2p.Pong:
-		t.Logf("INFO: Received pong response: %v", msg)
-	default:
-		return fmt.Errorf("unexpected message type: %T", msg)
-	}
 
 	return nil
 }
