@@ -624,6 +624,10 @@ type SendBlobTransactions struct {
 	AccountIndex uint64
 	// Client index to send the blob transactions to
 	ClientIndex uint64
+	// Transaction Index to request
+	TransactionIndexes []uint64
+	// Wait for a new pooled transaction message before actually requesting the transaction
+	WaitForNewPooledTransaction bool
 }
 
 func (step SendBlobTransactions) GetBlobsPerTransaction() uint64 {
@@ -635,14 +639,29 @@ func (step SendBlobTransactions) GetBlobsPerTransaction() uint64 {
 }
 
 func (step SendBlobTransactions) Execute(t *CancunTestContext) error {
+
+	// PEER with client.
+	// Get client index's enode
+	if step.ClientIndex >= uint64(len(t.TestEngines)) {
+		return fmt.Errorf("invalid client index %d", step.ClientIndex)
+	}
+	engine := t.Engines[step.ClientIndex]
+	conn, err := devp2p.PeerEngineClient(engine, t.CLMock)
+	if err != nil {
+		return fmt.Errorf("error peering engine client: %v", err)
+	}
+	t.Logf("INFO: Connected to client %d, remote public key: %s", step.ClientIndex, conn.RemoteKey())
+
+	// Sleep
+	time.Sleep(1 * time.Second)
 	// Send a blob transaction
 	addr := common.BigToAddress(cancun.DATAHASH_START_ADDRESS)
 	blobCountPerTx := step.GetBlobsPerTransaction()
-	var engine client.EngineClient
+	// var engine client.EngineClient
 	if step.ClientIndex >= uint64(len(t.Engines)) {
 		return fmt.Errorf("invalid client index %d", step.ClientIndex)
 	}
-	engine = t.Engines[step.ClientIndex]
+	// engine = t.Engines[step.ClientIndex]
 	//  Send the blob transactions
 	for bTx := uint64(0); bTx < step.TransactionCount; bTx++ {
 		blobTxCreator := &helper.BlobTransactionCreator{
@@ -681,6 +700,111 @@ func (step SendBlobTransactions) Execute(t *CancunTestContext) error {
 		t.Logf("INFO: Sent blob transaction: %s", blobTx.Hash().String())
 		t.CurrentBlobID += helper.BlobID(blobCountPerTx)
 		t.TestBlobTxPool.Mutex.Unlock()
+	}
+
+	// Request Pooled Transaction Hash
+	var (
+		txHashes = make([]common.Hash, len(step.TransactionIndexes))
+		txs      = make([]typ.Transaction, len(step.TransactionIndexes))
+		ok       bool
+	)
+	for i, txIndex := range step.TransactionIndexes {
+		txHashes[i], ok = t.TestBlobTxPool.HashesByIndex[txIndex]
+		if !ok {
+			return fmt.Errorf("transaction index %d not found", step.TransactionIndexes[0])
+		}
+		txs[i], ok = t.TestBlobTxPool.Transactions[txHashes[i]]
+		if !ok {
+			return fmt.Errorf("transaction %s not found", txHashes[i].String())
+		}
+	}
+
+	// Timeout value for all requests
+	timeout := 20 * time.Second
+
+	// Wait for a new pooled transaction message
+	if step.WaitForNewPooledTransaction {
+		msg, err := conn.WaitForResponse(timeout, 0)
+		t.Logf("Received message type: %T, expected: *devp2p.NewPooledTransactionHashes", msg)
+		if err != nil {
+			return errors.Wrap(err, "error waiting for response")
+		}
+		switch msg := msg.(type) {
+		case *devp2p.NewPooledTransactionHashes:
+			if len(msg.Hashes) != len(txHashes) {
+				return fmt.Errorf("expected %d hashes, got %d", len(txHashes), len(msg.Hashes))
+			}
+			if len(msg.Types) != len(txHashes) {
+				return fmt.Errorf("expected %d types, got %d", len(txHashes), len(msg.Types))
+			}
+			if len(msg.Sizes) != len(txHashes) {
+				return fmt.Errorf("expected %d sizes, got %d", len(txHashes), len(msg.Sizes))
+			}
+			for i := 0; i < len(txHashes); i++ {
+				hash, typ, size := msg.Hashes[i], msg.Types[i], msg.Sizes[i]
+				// Get the transaction
+				tx, ok := t.TestBlobTxPool.Transactions[hash]
+				if !ok {
+					return fmt.Errorf("transaction %s not found", hash.String())
+				}
+
+				if typ != tx.Type() {
+					return fmt.Errorf("expected type %d, got %d", tx.Type(), typ)
+				}
+
+				b, err := tx.MarshalBinary()
+				if err != nil {
+					return errors.Wrap(err, "error marshaling transaction")
+				}
+				if size != uint32(len(b)) {
+					return fmt.Errorf("expected size %d, got %d", len(b), size)
+				}
+			}
+		default:
+			return fmt.Errorf("unexpected message type: %T", msg)
+		}
+	}
+
+	// Send the request for the pooled transactions
+	getTxReq := &devp2p.GetPooledTransactions{
+		RequestId:                    1234,
+		GetPooledTransactionsRequest: txHashes,
+	}
+	if size, err := conn.Write(getTxReq); err != nil {
+		return errors.Wrap(err, "could not write to conn")
+	} else {
+		t.Logf("INFO: Wrote %d bytes to conn", size)
+	}
+
+	// Wait for the response
+	msg, err := conn.WaitForResponse(timeout, getTxReq.RequestId)
+	if err != nil {
+		return errors.Wrap(err, "error waiting for response")
+	}
+	switch msg := msg.(type) {
+	case *devp2p.PooledTransactions:
+		if len(msg.PooledTransactionsBytesPacket) != len(txHashes) {
+			return fmt.Errorf("expected %d txs, got %d", len(txHashes), len(msg.PooledTransactionsBytesPacket))
+		}
+		for i, txBytes := range msg.PooledTransactionsBytesPacket {
+			tx := txs[i]
+
+			expBytes, err := tx.MarshalBinary()
+			if err != nil {
+				return errors.Wrap(err, "error marshaling transaction")
+			}
+
+			if len(expBytes) != len(txBytes) {
+				return fmt.Errorf("expected size %d, got %d", len(expBytes), len(txBytes))
+			}
+
+			if !bytes.Equal(expBytes, txBytes) {
+				return fmt.Errorf("expected tx %#x, got %#x", expBytes, txBytes)
+			}
+
+		}
+	default:
+		return fmt.Errorf("unexpected message type: %T", msg)
 	}
 	return nil
 }

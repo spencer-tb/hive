@@ -1774,19 +1774,12 @@ var Tests = []test.Spec{
 			NewPayloads{
 				PayloadCount: 1,
 			},
-			// Peer before sending blob tx
-			DevP2PClientPeering{
-				ClientIndex: 0,
-			},
-			// Send single blob transaction
+			// DEBUG: Peer before sending blob tx, same port
 			SendBlobTransactions{
 				TransactionCount:              1,
 				BlobTransactionMaxBlobGasCost: big.NewInt(1),
-			},
-			DevP2PRequestPooledTransactionHash{
-				ClientIndex:                 0,
-				TransactionIndexes:          []uint64{0},
-				WaitForNewPooledTransaction: true,
+				TransactionIndexes:            []uint64{0},
+				WaitForNewPooledTransaction:   true,
 			},
 		},
 	},
