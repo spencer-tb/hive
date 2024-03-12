@@ -826,6 +826,7 @@ func (step DevP2PRequestPooledTransactionHash) Execute(t *CancunTestContext) err
 	// Wait for a new pooled transaction message
 	if step.WaitForNewPooledTransaction {
 		msg, err := conn.WaitForResponse(timeout, 0)
+		t.Logf("Received message type: %T, expected: *devp2p.NewPooledTransactionHashes", msg)
 		if err != nil {
 			return errors.Wrap(err, "error waiting for response")
 		}
