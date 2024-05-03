@@ -27,6 +27,7 @@ func (g genesisBlock) MarshalJSON() ([]byte, error) {
 		BaseFee       *math.HexOrDecimal256 `json:"baseFeePerGas"`
 		BlobGasUsed   *math.HexOrDecimal64  `json:"blobGasUsed"`
 		ExcessBlobGas *math.HexOrDecimal64  `json:"excessBlobGas"`
+		RequestsRoot  common.Hash           `json:"requestsRoot"`
 		Hash          common.Hash           `json:"hash"`
 	}
 	var enc genesisBlock
@@ -40,6 +41,7 @@ func (g genesisBlock) MarshalJSON() ([]byte, error) {
 	enc.BaseFee = (*math.HexOrDecimal256)(g.BaseFee)
 	enc.BlobGasUsed = (*math.HexOrDecimal64)(g.BlobGasUsed)
 	enc.ExcessBlobGas = (*math.HexOrDecimal64)(g.ExcessBlobGas)
+	enc.RequestsRoot = g.RequestsRoot
 	enc.Hash = g.Hash
 	return json.Marshal(&enc)
 }
@@ -57,6 +59,7 @@ func (g *genesisBlock) UnmarshalJSON(input []byte) error {
 		BaseFee       *math.HexOrDecimal256 `json:"baseFeePerGas"`
 		BlobGasUsed   *math.HexOrDecimal64  `json:"blobGasUsed"`
 		ExcessBlobGas *math.HexOrDecimal64  `json:"excessBlobGas"`
+		RequestsRoot  *common.Hash          `json:"requestsRoot"`
 		Hash          *common.Hash          `json:"hash"`
 	}
 	var dec genesisBlock
@@ -92,6 +95,9 @@ func (g *genesisBlock) UnmarshalJSON(input []byte) error {
 	}
 	if dec.ExcessBlobGas != nil {
 		g.ExcessBlobGas = (*uint64)(dec.ExcessBlobGas)
+	}
+	if dec.RequestsRoot != nil {
+		g.RequestsRoot = *dec.RequestsRoot
 	}
 	if dec.Hash != nil {
 		g.Hash = *dec.Hash

@@ -38,12 +38,14 @@ type Engine interface {
 	GetPayloadV1(ctx context.Context, payloadId *api.PayloadID) (typ.ExecutableData, error)
 	GetPayloadV2(ctx context.Context, payloadId *api.PayloadID) (typ.ExecutableData, *big.Int, error)
 	GetPayloadV3(ctx context.Context, payloadId *api.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, *bool, error)
+	GetPayloadV4(ctx context.Context, payloadId *api.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, *bool, error)
 	GetPayload(ctx context.Context, version int, payloadId *api.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, *bool, error)
 
-	NewPayload(ctx context.Context, version int, payload *typ.ExecutableData) (api.PayloadStatusV1, error)
 	NewPayloadV1(ctx context.Context, payload *typ.ExecutableData) (api.PayloadStatusV1, error)
 	NewPayloadV2(ctx context.Context, payload *typ.ExecutableData) (api.PayloadStatusV1, error)
 	NewPayloadV3(ctx context.Context, payload *typ.ExecutableData) (api.PayloadStatusV1, error)
+	NewPayloadV4(ctx context.Context, payload *typ.ExecutableData) (api.PayloadStatusV1, error)
+	NewPayload(ctx context.Context, version int, payload *typ.ExecutableData) (api.PayloadStatusV1, error)
 
 	GetPayloadBodiesByRangeV1(ctx context.Context, start uint64, count uint64) ([]*typ.ExecutionPayloadBodyV1, error)
 	GetPayloadBodiesByHashV1(ctx context.Context, hashes []common.Hash) ([]*typ.ExecutionPayloadBodyV1, error)

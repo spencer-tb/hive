@@ -106,6 +106,8 @@ func (tc *TestCase) run(t *hivesim.T) {
 	if err != nil {
 		tc.Fatalf("unable to get genesis block: %v", err)
 	}
+	t.Log(tc.GenesisBlock)
+	t.Log(genesisBlock.Hash())
 	if genesisBlock.Hash() != tc.GenesisBlock.Hash {
 		tc.Fatalf("genesis hash mismatch")
 	}

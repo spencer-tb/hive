@@ -62,6 +62,7 @@ func (f *Fixture) Genesis() *core.Genesis {
 		BaseFee:       f.GenesisBlock.BaseFee,
 		BlobGasUsed:   f.GenesisBlock.BlobGasUsed,
 		ExcessBlobGas: f.GenesisBlock.ExcessBlobGas,
+		RequestsRoot:  f.GenesisBlock.RequestsRoot,
 		Alloc:         f.Pre,
 	}
 }
@@ -125,6 +126,7 @@ type genesisBlock struct {
 	BaseFee       *big.Int         `json:"baseFeePerGas"`
 	BlobGasUsed   *uint64          `json:"blobGasUsed"`
 	ExcessBlobGas *uint64          `json:"excessBlobGas"`
+	RequestsRoot  common.Hash      `json:"requestsRoot"`
 
 	Hash common.Hash `json:"hash"`
 }
