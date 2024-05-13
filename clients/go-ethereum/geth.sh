@@ -47,7 +47,8 @@
 set -e
 
 geth=/usr/local/bin/geth
-FLAGS="--state.scheme=path"
+# FLAGS="--state.scheme=path"
+FLAGS=""
 
 if [ "$HIVE_LOGLEVEL" != "" ]; then
     FLAGS="$FLAGS --verbosity=$HIVE_LOGLEVEL"

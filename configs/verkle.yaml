@@ -1,0 +1,6 @@
+- client: go-ethereum
+  nametag: verkle-git
+  dockerfile: git
+  build_args:
+      github: gballet/go-ethereum
+      tag: kaustinen-with-shapella
