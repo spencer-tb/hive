@@ -3,4 +3,4 @@
   dockerfile: git
   build_args:
       github: gballet/go-ethereum
-      tag: kaustinen-with-shapella
+      tag: t8n-verkle-exec-rebased
