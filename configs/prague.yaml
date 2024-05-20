@@ -1,6 +1,6 @@
 
 - client: besu
-  nametag: prauge-git
+  nametag: prague-git
   dockerfile: git
   build_args:
       github: hyperledger/besu
