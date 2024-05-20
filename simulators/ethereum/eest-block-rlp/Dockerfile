@@ -6,7 +6,7 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN git clone --depth 1 --branch prague-exception https://github.com/spencer-tb/execution-spec-tests.git
+RUN git clone --depth 1 --branch consume-rlp-prague https://github.com/spencer-tb/execution-spec-tests.git
 
 WORKDIR /execution-spec-tests
 
