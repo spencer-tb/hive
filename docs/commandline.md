@@ -88,7 +88,7 @@ built even when there are no changes to the simulator code.
 ### Simulation Options
 
 `--sim.limit <pattern>`: Specifies a regular expression to selectively enable suites and
-test cases. This is interpreted by simulators. It sets the `HIVE_TEST_PATTERN` environment
+test cases. This is interpreted by simulators. It sets the `HIVE_TEST_INCLUDE` environment
 variable.
 
 The test pattern expression is usually interpreted as an unanchored match, i.e. an empty
@@ -105,6 +105,10 @@ This command runs the `consensus` simulator and runs only tests from the `stBugs
 directory (note the first `/`, matching any suite name):
 
     ./hive --sim ethereum/consensus --sim.limit /stBugs/
+
+TODO: Add specific test pattern match
+
+`--sim.omit <pattern>`: TODO
 
 `--sim.timelimit <timeout>`: Simulation timeout. Hive aborts the simulator if it exceeds
 this time. There is no default timeout.

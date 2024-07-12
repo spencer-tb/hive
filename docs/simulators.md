@@ -93,7 +93,8 @@ This is the list of all environment variables that hive sets when launching simu
 | Variable            | Meaning                                      | Hive Flag           |
 |---------------------|----------------------------------------------|---------------------|
 | `HIVE_SIMULATOR`    | URL of the API server                        |                     |
-| `HIVE_TEST_PATTERN` | Regular expression, selects suites/tests     | `--sim.limit`       |
+| `HIVE_TEST_INCLUDE` | Regular expression, selects suites/tests     | `--sim.limit`       |
+| `HIVE_TEST_EXCLUDE` | Regular expression, deselects suites/tests   | `--sim.omit`        |
 | `HIVE_PARALLELISM`  | Integer, sets test concurrency               | `--sim.parallelism` |
 | `HIVE_RANDOM_SEED`  | Integer, sets simulator random seed number   | `--sim.randomseed`  |
 | `HIVE_LOGLEVEL`     | Decimal 0-5, configures simulator log levels | `--sim.loglevel`    |

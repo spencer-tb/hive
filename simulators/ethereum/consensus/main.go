@@ -83,8 +83,8 @@ func loaderTest(t *hivesim.T) {
 		}()
 	}
 
-	_, testPattern := t.Sim.TestPattern()
-	re := regexp.MustCompile(testPattern)
+	_, testInclude := t.Sim.TestInclude()
+	re := regexp.MustCompile(testInclude)
 
 	// Deliver test cases.
 	loadTests(t, fileRoot, re, func(tc testcase) {

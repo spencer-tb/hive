@@ -40,7 +40,7 @@ impl Simulation {
     /// and connects to it. It will panic if HIVE_SIMULATOR is not set.
     pub fn new() -> Self {
         let url = env::var("HIVE_SIMULATOR").expect("HIVE_SIMULATOR environment variable not set");
-        let test_matcher = match env::var("HIVE_TEST_PATTERN") {
+        let test_matcher = match env::var("HIVE_TEST_INCLUDE") {
             Ok(pattern) => {
                 if pattern.is_empty() {
                     None

@@ -6,7 +6,6 @@ import (
 	"io/fs"
 	"math/big"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -22,7 +21,7 @@ var (
 
 // loadFixtureTests extracts tests from fixture.json files in a given directory,
 // creates a testcase for each test, and passes the testcase struct to fn.
-func loadFixtureTests(t *hivesim.T, root string, re *regexp.Regexp, fn func(TestCase)) {
+func loadFixtureTests(t *hivesim.T, root string, fn func(TestCase)) {
 	filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		// check file is actually a fixture
 		if err != nil {
@@ -30,10 +29,6 @@ func loadFixtureTests(t *hivesim.T, root string, re *regexp.Regexp, fn func(Test
 			return err
 		}
 		if d.IsDir() || !strings.HasSuffix(d.Name(), ".json") {
-			return nil
-		}
-		excludePaths := []string{"example/"} // modify for tests to exclude
-		if strings.Contains(path, strings.Join(excludePaths, "")) {
 			return nil
 		}
 
@@ -56,10 +51,6 @@ func loadFixtureTests(t *hivesim.T, root string, re *regexp.Regexp, fn func(Test
 				Name:     path[10:len(path)-5] + "/" + name,
 				FilePath: path,
 				Fixture:  fixture,
-			}
-			// match test case name against regex if provided
-			if !re.MatchString(tc.Name) {
-				continue
 			}
 			// feed tc to single worker within fixtureRunner()
 			fn(tc)

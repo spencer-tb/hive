@@ -76,3 +76,5 @@ require (
 )
 
 replace github.com/ethereum/hive/simulators/ethereum/engine => ../engine
+
+replace github.com/ethereum/hive => github.com/spencer-tb/hive v0.0.0-20240712193651-353472c4a24a

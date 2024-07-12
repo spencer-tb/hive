@@ -117,7 +117,11 @@ Results from the test tool are reported as individual sub-tests.`,
 		},
 	}
 
-	hivesim.MustRun(hivesim.New(), discv4, discv5, eth, snap)
+	simulator := hivesim.New()
+	hivesim.MustRunSuite(simulator, discv4)
+	hivesim.MustRunSuite(simulator, discv5)
+	hivesim.MustRunSuite(simulator, eth)
+	hivesim.MustRunSuite(simulator, snap)
 }
 
 func loadTestChainConfig() hivesim.Params {
@@ -138,7 +142,7 @@ func runEthTest(t *hivesim.T, c *hivesim.Client) {
 		t.Fatal(err)
 	}
 
-	_, pattern := t.Sim.TestPattern()
+	_, pattern := t.Sim.TestInclude()
 	cmd := exec.Command("./devp2p", "rlpx", "eth-test",
 		"--tap",
 		"--run", pattern,
@@ -158,7 +162,7 @@ func runSnapTest(t *hivesim.T, c *hivesim.Client) {
 		t.Fatal(err)
 	}
 
-	_, pattern := t.Sim.TestPattern()
+	_, pattern := t.Sim.TestInclude()
 	cmd := exec.Command("./devp2p", "rlpx", "snap-test",
 		"--tap",
 		"--run", pattern,
@@ -216,7 +220,7 @@ func runDiscv5Test(t *hivesim.T, c *hivesim.Client, getENR func(*hivesim.Client)
 	t.Log("ENR:", nodeURL)
 
 	// Run the test tool.
-	_, pattern := t.Sim.TestPattern()
+	_, pattern := t.Sim.TestInclude()
 	cmd := exec.Command("./devp2p", "discv5", "test", "--run", pattern, "--tap", "--listen1", bridgeIP, "--listen2", net1IP, nodeURL)
 	if err := runTAP(t, c.Type, cmd); err != nil {
 		t.Fatal(err)
@@ -236,7 +240,7 @@ func runDiscv4Test(t *hivesim.T, c *hivesim.Client) {
 	}
 
 	// Run the test tool.
-	_, pattern := t.Sim.TestPattern()
+	_, pattern := t.Sim.TestInclude()
 	cmd := exec.Command("./devp2p", "discv4", "test", "--run", pattern, "--tap", "--remote", nodeURL, "--listen1", bridgeIP, "--listen2", net1IP)
 	if err := runTAP(t, c.Type, cmd); err != nil {
 		t.Fatal(err)

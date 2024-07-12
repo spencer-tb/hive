@@ -59,8 +59,8 @@ conformance with the execution API specification.`[1:],
 }
 
 func runAllTests(t *hivesim.T, c *hivesim.Client, clientName string) {
-	_, testPattern := t.Sim.TestPattern()
-	re := regexp.MustCompile(testPattern)
+	_, testInclude := t.Sim.TestInclude()
+	re := regexp.MustCompile(testInclude)
 	tests := loadTests(t, "tests", re)
 	for _, test := range tests {
 		test := test

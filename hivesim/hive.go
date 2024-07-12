@@ -21,10 +21,11 @@ import (
 
 // Simulation wraps the simulation HTTP API provided by hive.
 type Simulation struct {
-	url  string
-	m    testMatcher
-	docs *docsCollector
-	ll   int
+	url     string
+	include testMatcher
+	exclude testMatcher
+	docs    *docsCollector
+	ll      int
 }
 
 // New looks up the hive host URI using the HIVE_SIMULATOR environment variable
@@ -47,12 +48,19 @@ func New() *Simulation {
 		}
 	}
 	sim := &Simulation{url: url, docs: docs}
-	if p := os.Getenv("HIVE_TEST_PATTERN"); p != "" {
+	if p := os.Getenv("HIVE_TEST_INCLUDE"); p != "" {
 		m, err := parseTestPattern(p)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Warning: ignoring invalid test pattern regexp: "+err.Error())
 		}
-		sim.m = m
+		sim.include = m
+	}
+	if p := os.Getenv("HIVE_TEST_EXCLUDE"); p != "" {
+		m, err := parseTestPattern(p)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Warning: ignoring invalid test pattern regexp: "+err.Error())
+		}
+		sim.exclude = m
 	}
 	if ll := os.Getenv("HIVE_LOGLEVEL"); ll != "" {
 		sim.ll, _ = strconv.Atoi(ll)
@@ -66,27 +74,28 @@ func NewAt(url string) *Simulation {
 	return &Simulation{url: url}
 }
 
-// SetTestPattern sets the regular expression that enables/skips suites and test cases.
+// SetTestInclude sets the regular expression that includes/skips suites and test cases.
 // This method is provided for use in unit tests. For simulator runs launched by hive, the
 // test pattern is set automatically in New().
-func (sim *Simulation) SetTestPattern(p string) {
+func (sim *Simulation) SetTestInclude(p string) {
 	m, err := parseTestPattern(p)
 	if err != nil {
 		panic("invalid test pattern regexp: " + err.Error())
 	}
-	sim.m = m
+	sim.include = m
 }
 
-// TestPattern returns the regular expressions used to enable/skip suite and test names.
-func (sim *Simulation) TestPattern() (suiteExpr string, testNameExpr string) {
+// TestInclude returns the regular expressions used to include/skip suite and test names.
+func (sim *Simulation) TestInclude() (suiteExpr string, testNameExpr string) {
 	se := ""
-	if sim.m.suite != nil {
-		se = sim.m.suite.String()
+	if sim.include.suite != nil {
+		se = sim.include.suite.String()
 	}
 	te := ""
-	if sim.m.test != nil {
-		te = sim.m.test.String()
+	if sim.include.test != nil {
+		te = sim.include.test.String()
 	}
+
 	return se, te
 }
 

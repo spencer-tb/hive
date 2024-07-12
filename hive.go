@@ -25,7 +25,8 @@ func main() {
 		dockerPull            = flag.Bool("docker.pull", false, "Refresh base images when building images.")
 		dockerOutput          = flag.Bool("docker.output", false, "Relay all docker output to stderr.")
 		simPattern            = flag.String("sim", "", "Regular `expression` selecting the simulators to run.")
-		simTestPattern        = flag.String("sim.limit", "", "Regular `expression` selecting tests/suites (interpreted by simulators).")
+		simTestInclude        = flag.String("sim.limit", "", "Regular `expression` selecting tests/suites (interpreted by simulators).")
+		simTestExclude        = flag.String("sim.omit", "", "Regular `expression` deselecting tests/suites (interpreted by simulators).")
 		simParallelism        = flag.Int("sim.parallelism", 1, "Max `number` of parallel clients/containers (interpreted by simulators).")
 		simRandomSeed         = flag.Int("sim.randomseed", 0, "Randomness seed number (interpreted by simulators).")
 		simTestLimit          = flag.Int("sim.testlimit", 0, "[DEPRECATED] Max `number` of tests to execute per client (interpreted by simulators).")
@@ -109,7 +110,8 @@ func main() {
 	env := libhive.SimEnv{
 		LogDir:             *testResultsRoot,
 		SimLogLevel:        *simLogLevel,
-		SimTestPattern:     *simTestPattern,
+		SimTestInclude:     *simTestInclude,
+		SimTestExclude:     *simTestExclude,
 		SimParallelism:     *simParallelism,
 		SimRandomSeed:      *simRandomSeed,
 		SimDurationLimit:   *simTimeLimit,

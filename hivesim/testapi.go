@@ -64,9 +64,18 @@ func MustRun(host *Simulation, suites ...Suite) {
 
 // RunSuite runs all tests in a suite.
 func RunSuite(host *Simulation, suite Suite) error {
-	if !host.m.match(suite.Name, "") {
+	// Skip suites that match the suite exclusion pattern (`--sim.omit "<suite_exclude_pattern>/<test_pattern>"`)
+	if host.exclude.pattern != "" && host.exclude.match(suite.Name, "") {
 		if host.ll > 3 { // hive log level > 3
-			fmt.Fprintf(os.Stderr, "skipping suite %q because it doesn't match test pattern %s\n", suite.Name, host.m.pattern)
+			fmt.Fprintf(os.Stderr, "skipping suite %q because it matches suite exclusion pattern %s\n", suite.Name, host.include.pattern)
+		}
+		return nil
+	}
+
+	// Skip suites that don't match the suite inclusion pattern (`--sim.limit "<suite_include_pattern>/<test_pattern>"`)
+	if !host.include.match(suite.Name, "") {
+		if host.ll > 3 {
+			fmt.Fprintf(os.Stderr, "skipping suite %q because it doesn't match suite inclusion pattern %s\n", suite.Name, host.include.pattern)
 		}
 		return nil
 	}
@@ -353,9 +362,18 @@ func (spec testSpec) request() TestStartInfo {
 }
 
 func runTest(host *Simulation, test testSpec, runit func(t *T)) error {
-	if !test.alwaysRun && !host.m.match(test.suite.Name, test.name) {
+	// Skip tests that match the exclusion pattern (`--sim.omit "<suite_pattern>/<test_exclude_pattern>`)
+	if !test.alwaysRun && host.exclude.pattern != "" && host.exclude.match(test.suite.Name, test.name) {
 		if host.ll > 3 { // hive log level > 3
-			fmt.Fprintf(os.Stderr, "skipping test %q because it doesn't match test pattern %s\n", test.name, host.m.pattern)
+			fmt.Fprintf(os.Stderr, "skipping test %q because it matches test exclusion pattern %s\n", test.name, host.exclude.pattern)
+		}
+		return nil
+	}
+
+	// Skip tests that don't match the inclusion pattern (`--sim.limit "<suite_pattern>/<test_include_pattern>"`)
+	if !test.alwaysRun && !host.include.match(test.suite.Name, test.name) {
+		if host.ll > 3 {
+			fmt.Fprintf(os.Stderr, "skipping test %q because it doesn't match the test inclusion pattern %s\n", test.name, host.include.pattern)
 		}
 		return nil
 	}

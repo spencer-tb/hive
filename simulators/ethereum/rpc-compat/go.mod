@@ -41,3 +41,5 @@ require (
 	golang.org/x/sys v0.20.0 // indirect
 	gopkg.in/inconshreveable/log15.v2 v2.0.0-20200109203555-b30bc20e4fd1 // indirect
 )
+
+replace github.com/ethereum/hive => github.com/spencer-tb/hive v0.0.0-20240712193651-353472c4a24a

@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -88,11 +87,8 @@ func fixtureRunner(t *hivesim.T) {
 		}()
 	}
 
-	_, testPattern := t.Sim.TestPattern()
-	re := regexp.MustCompile(testPattern)
-
 	// deliver and run test cases against each client
-	loadFixtureTests(t, fileRoot, re, func(tc TestCase) {
+	loadFixtureTests(t, fileRoot, func(tc TestCase) {
 		for _, client := range clientTypes {
 			if !client.HasRole("eth1") {
 				continue

@@ -126,7 +126,7 @@ func TestSkipping(t *testing.T) {
 		defer srv.Close()
 
 		sim := NewAt(srv.URL)
-		sim.SetTestPattern(test.Pattern)
+		sim.SetTestInclude(test.Pattern)
 
 		err := Run(sim, suiteA, suiteB)
 		if err != nil {
