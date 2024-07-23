@@ -1,0 +1,7 @@
+
+- client: go-ethereum
+  nametag: prague-git
+  dockerfile: git
+  build_args:
+      github: lightclient/go-ethereum
+      tag: prague-devnet-1
