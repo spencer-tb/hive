@@ -14,4 +14,4 @@ RUN pip install --upgrade pip
 RUN pip install -e .
 
 ## Define `consume engine` entry point with latest fixture release
-ENTRYPOINT ["consume", "engine", "--input=https://github.com/ethereum/execution-spec-tests/releases/download/v3.0.0/fixtures_develop.tar.gz", "-v"]
+ENTRYPOINT ["consume", "engine", "--input=https://github.com/ethereum/execution-spec-tests/releases/latest/download/fixtures_develop.tar.gz", "-v"]
