@@ -14,12 +14,12 @@
   nametag: prague-devnet-1
   build_args:
     baseimage: ethpandaops/reth
-    tag: main-ed16643
+    tag: main
 - client: besu
   nametag: prague-devnet-1
   build_args:
     baseimage: ethpandaops/besu
-    tag: main-bcbfec0
+    tag: main
 - client: ethereumjs
   nametag: prague-devnet-1
   build_args:
@@ -29,4 +29,4 @@
   nametag: prague-devnet-1
   build_args:
     baseimage: ethpandaops/erigon
-    tag: main-6231a93
+    tag: main
