@@ -9,7 +9,7 @@
   nametag: prague-devnet-1
   dockerfile: git
   build_args:
-      tag: pectra
+      tag: prague/feature/eip-7702
 - client: reth
   nametag: prague-devnet-1
   build_args:
