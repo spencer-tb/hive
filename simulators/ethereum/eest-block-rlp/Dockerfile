@@ -8,10 +8,11 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 ## Clone and install EEST
-RUN git clone https://github.com/ethereum/execution-spec-tests.git
+RUN git clone --depth 1 --branch fix-sim-parallelism https://github.com/ethereum/execution-spec-tests.git
 WORKDIR execution-spec-tests
 RUN pip install --upgrade pip
 RUN pip install -e .
 
 ## Define `consume rlp` entry point with latest fixture release
-ENTRYPOINT ["consume", "rlp", "--input=https://github.com/ethereum/execution-spec-tests/releases/latest/download/fixtures_develop.tar.gz", "-v", "--fork", "Prague"]
+#ENTRYPOINT ["consume", "rlp", "--input=https://github.com/ethereum/execution-spec-tests/releases/latest/download/fixtures_develop.tar.gz", "-v", "--fork", "Prague"]
+ENTRYPOINT ["consume", "hive", "--input=https://github.com/ethereum/execution-spec-tests/releases/latest/download/fixtures_develop.tar.gz", "-v", "--fork", "Prague"]
