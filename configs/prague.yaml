@@ -1,30 +1,34 @@
-
 - client: go-ethereum
   nametag: prague-devnet-1
   dockerfile: git
   build_args:
       github: lightclient/go-ethereum
       tag: prague-devnet-1
+
 - client: nethermind
   nametag: prague-devnet-1
   dockerfile: git
   build_args:
       tag: prague/feature/eip-7702
+
 - client: reth
   nametag: prague-devnet-1
   build_args:
     baseimage: ethpandaops/reth
     tag: main
+
 - client: besu
   nametag: prague-devnet-1
   build_args:
     baseimage: ethpandaops/besu
     tag: main
+
 - client: ethereumjs
   nametag: prague-devnet-1
   build_args:
     github: ethereumjs/ethereumjs-monorepo
     tag: master
+
 - client: erigon
   nametag: prague-devnet-1
   build_args:
