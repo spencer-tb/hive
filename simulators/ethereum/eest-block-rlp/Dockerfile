@@ -13,5 +13,8 @@ WORKDIR execution-spec-tests
 RUN pip install --upgrade pip
 RUN pip install -e .
 
+RUN wget https://github.com/ethereum/execution-spec-tests/releases/latest/download/fixtures_develop.tar.gz
+RUN tar -xvzf fixtures_develop.tar.gz
+
 ## Define `consume rlp` entry point with latest fixture release
-ENTRYPOINT ["consume", "rlp", "--input=https://github.com/ethereum/execution-spec-tests/releases/latest/download/fixtures_develop.tar.gz", "-v", "--fork", "Prague"]
+ENTRYPOINT ["consume", "rlp", "--input=fixtures", "-v", "--fork", "Prague"]
