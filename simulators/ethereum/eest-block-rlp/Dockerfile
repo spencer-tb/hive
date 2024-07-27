@@ -8,7 +8,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 ## Clone and install EEST
-RUN git clone https://github.com/ethereum/execution-spec-tests.git --depth 1
+#RUN git clone https://github.com/ethereum/execution-spec-tests.git --depth 1
+RUN git clone https://github.com/spencer-tb/execution-spec-tests.git --depth 1 --branch consume-hive-command
 WORKDIR execution-spec-tests
 RUN pip install --upgrade pip && \
     pip install -e .
