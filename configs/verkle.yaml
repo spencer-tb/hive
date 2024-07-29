@@ -1,0 +1,5 @@
+- client: go-ethereum
+  dockerfile: git
+  build_args:
+      github: gballet/go-ethereum
+      tag: t8n-verkle-exec-rebased
