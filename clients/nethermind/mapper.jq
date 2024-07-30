@@ -151,6 +151,9 @@ def clique_engine:
     "eip5656TransitionTimestamp": env.HIVE_CANCUN_TIMESTAMP|to_hex,
     "eip6780TransitionTimestamp": env.HIVE_CANCUN_TIMESTAMP|to_hex,
 
+    # Verkle
+    "eip6800TransitionTimestamp": env.HIVE_VERKLE_TIMESTAMP|to_hex,
+
     # Other chain parameters
     "networkID": env.HIVE_NETWORK_ID|to_hex,
     "chainID": env.HIVE_CHAIN_ID|to_hex,
