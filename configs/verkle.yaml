@@ -2,4 +2,11 @@
   dockerfile: git
   build_args:
       github: gballet/go-ethereum
-      tag: kaustinen-with-shapella
+      tag: jsign-t8n-verkle-genesis-rebased
+      # tag: kaustinen-with-shapella
+- client: nethermind
+  dockerfile: git
+  build_args:
+      github: NethermindEth/nethermind
+      tag: feature/verkle
+

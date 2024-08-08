@@ -56,6 +56,7 @@ def to_bool:
     "terminalTotalDifficulty": env.HIVE_TERMINAL_TOTAL_DIFFICULTY|to_int,
     "terminalTotalDifficultyPassed": env.HIVE_TERMINAL_TOTAL_DIFFICULTY_PASSED|to_bool,
     "shanghaiTime": env.HIVE_SHANGHAI_TIMESTAMP|to_int,
-    "cancunTime": env.HIVE_CANCUN_TIMESTAMP|to_int,
+    #"cancunTime": env.HIVE_CANCUN_TIMESTAMP|to_int, add back once verkle is rebased on cancun
+    "verkleTime": env.HIVE_VERKLE_TIMESTAMP|to_int,
   }|remove_empty
 }

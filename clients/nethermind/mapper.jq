@@ -144,15 +144,16 @@ def clique_engine:
     "eip3860TransitionTimestamp": env.HIVE_SHANGHAI_TIMESTAMP|to_hex,
     "eip4895TransitionTimestamp": env.HIVE_SHANGHAI_TIMESTAMP|to_hex,
 
-    # Cancun
-    "eip4844TransitionTimestamp": env.HIVE_CANCUN_TIMESTAMP|to_hex,
-    "eip4788TransitionTimestamp": env.HIVE_CANCUN_TIMESTAMP|to_hex,
-    "eip1153TransitionTimestamp": env.HIVE_CANCUN_TIMESTAMP|to_hex,
-    "eip5656TransitionTimestamp": env.HIVE_CANCUN_TIMESTAMP|to_hex,
-    "eip6780TransitionTimestamp": env.HIVE_CANCUN_TIMESTAMP|to_hex,
+    # Cancun - re-add once verkle is rebased on cancun
+    #"eip4844TransitionTimestamp": env.HIVE_CANCUN_TIMESTAMP|to_hex,
+    #"eip4788TransitionTimestamp": env.HIVE_CANCUN_TIMESTAMP|to_hex,
+    #"eip1153TransitionTimestamp": env.HIVE_CANCUN_TIMESTAMP|to_hex,
+    #"eip5656TransitionTimestamp": env.HIVE_CANCUN_TIMESTAMP|to_hex,
+    #"eip6780TransitionTimestamp": env.HIVE_CANCUN_TIMESTAMP|to_hex,
 
     # Verkle
     "eip6800TransitionTimestamp": env.HIVE_VERKLE_TIMESTAMP|to_hex,
+    "eip2935TransitionTimestamp": env.HIVE_VERKLE_TIMESTAMP|to_hex,
 
     # Other chain parameters
     "networkID": env.HIVE_NETWORK_ID|to_hex,
