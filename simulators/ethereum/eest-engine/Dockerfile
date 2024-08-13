@@ -12,7 +12,7 @@ RUN apt-get update && \
 RUN git clone https://github.com/spencer-tb/execution-spec-tests.git --depth 1 --branch consume-flag-tweaks
 WORKDIR execution-spec-tests
 RUN pip install --upgrade pip && \
-    pip install -e .
+    pip install .
 
 ## Define `consume engine` entry point using the local fixtures
 ENTRYPOINT ["consume", "engine", "-v", "--stable"]
