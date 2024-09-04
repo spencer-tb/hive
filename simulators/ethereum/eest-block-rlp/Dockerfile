@@ -8,12 +8,10 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 ## Clone and install EEST
-#RUN git clone https://github.com/ethereum/execution-spec-tests.git --depth 1
-RUN git clone https://github.com/spencer-tb/execution-spec-tests.git --depth 1 --branch consume-flag-tweaks
+RUN git clone https://github.com/ethereum/execution-spec-tests.git --depth 1
 WORKDIR execution-spec-tests
-RUN pip install --upgrade pip && \
-    pip install .
-
+RUN pip install uv && uv sync
 
 ## Define `consume rlp` entry point using the local fixtures
-ENTRYPOINT ["consume", "rlp", "-v", "--stable"]
+ENTRYPOINT ["uv", "run", "consume", "rlp", "-v", "--input", "https://github.com/ethereum/execution-spec-tests/releases/latest/download/fixtures_develop.tar.gz", "-k", "not Prague"]
+
