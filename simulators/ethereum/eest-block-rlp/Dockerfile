@@ -8,10 +8,10 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 ## Clone and install EEST
-RUN git clone https://github.com/ethereum/execution-spec-tests.git --depth 1
+RUN git clone https://github.com/ethereum/execution-spec-tests.git --branch devnet-4-updates --single-branch --depth 1
 WORKDIR execution-spec-tests
 RUN pip install uv && uv sync
 
 ## Define `consume rlp` entry point using the local fixtures
-ENTRYPOINT ["uv", "run", "consume", "rlp", "-v", "--input", "https://github.com/ethereum/execution-spec-tests/releases/download/pectra-devnet-3%40v1.5.0/fixtures_pectra-devnet-3.tar.gz"]
+ENTRYPOINT ["uv", "run", "consume", "rlp", "-v", "--input", "https://github.com/ethereum/execution-spec-tests/releases/download/pectra-devnet-4%40v1.0.1/fixtures_pectra-devnet-4.tar.gz"]
 
