@@ -28,7 +28,6 @@
 
 - client: ethereumjs
   nametag: prague-devnet-4
-  dockerfile: git
   build_args:
     github: ethereumjs/ethereumjs-monorepo
     tag: 7702-devnet-4-plus-t8ntool
