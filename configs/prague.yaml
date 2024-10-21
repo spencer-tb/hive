@@ -33,8 +33,9 @@
     github: ethereumjs/ethereumjs-monorepo
     tag: 7702-devnet-4-plus-t8ntool
 
-# - client: erigon
-#   nametag: prague-devnet-4
-#   build_args:
-#       baseimage: thorax/erigon
-#       tag: docker_pectra
+- client: erigon
+  nametag: prague-devnet-4
+  dockerfile: git
+  build_args:
+    github: erigontech/erigon
+    tag: som/remove_deposit_req
