@@ -12,18 +12,19 @@
     github: NethermindEth/nethermind
     tag: pectra_devnet_4
 
-# - client: reth
-#   nametag: prague-devnet-4
-#   dockerfile: git
-#   build_args:
-#     github: paradigmxyz/reth
-#     tag: onbjerg/devnet-3
+- client: reth
+  nametag: prague-devnet-4
+  dockerfile: git
+  build_args:
+    github: paradigmxyz/reth
+    tag: onbjerg/devnet-4
 
-# - client: besu
-#   nametag: prague-devnet-4
-#   build_args:
-#     baseimage: ethpandaops/besu
-#     tag: main
+- client: besu
+  nametag: prague-devnet-4
+  dockerfile: git
+  build_args:
+    baseimage: hyperledger/besu
+    tag: pectra-devnet-4
 
 - client: ethereumjs
   nametag: prague-devnet-4
