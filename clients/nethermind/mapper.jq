@@ -181,6 +181,7 @@ def clique_engine:
     "blobGasUsed": .blobGasUsed,
     "excessBlobGas": .excessBlobGas,
     "parentBeaconBlockRoot": .parentBeaconBlockRoot,
+    "requestsHash": .requestsHash,
   },
   "accounts": ((.alloc|with_entries(.key|="0x"+.)) * {
     "0x0000000000000000000000000000000000000001": {
