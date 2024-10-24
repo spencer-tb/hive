@@ -37,4 +37,4 @@
   dockerfile: git
   build_args:
     github: erigontech/erigon
-    tag: som/remove_deposit_req
+    tag: pectra_e2
