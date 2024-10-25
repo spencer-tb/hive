@@ -29,8 +29,10 @@
 - client: ethereumjs
   nametag: prague-devnet-4
   build_args:
-    github: ethereumjs/ethereumjs-monorepo
-    tag: 7702-devnet-4-plus-t8ntool
+    github: spencer-tb/ethereumjs-monorepo
+    tag: prague-devnet-4-genesis
+    # github: ethereumjs/ethereumjs-monorepo
+    # tag: 7702-devnet-4-plus-t8ntool
 
 - client: erigon
   nametag: prague-devnet-4
