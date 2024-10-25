@@ -8,8 +8,8 @@ ARG tag=master
 RUN echo "Cloning: $github - $tag" \
     && apk update && apk add --no-cache bash git jq curl python3 gcc make g++ \
     && rm -rf /var/cache/apk/* \
-    && git clone --depth 1 -b $tag https://github.com/$github \
-    && cd ethereumjs-monorepo && npm i
+    && git clone -b $tag https://github.com/$github \
+    && cd ethereumjs-monorepo && git checkout 8cea60482b11d0645aba288aa1bba3a18f36f70b && npm i
 
 # Create version.txt
 RUN cd ethereumjs-monorepo/packages/client && npm ethereumjs --version > /version.txt
