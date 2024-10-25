@@ -1,0 +1,20 @@
+## For running consume with hive dev mode: required on non-linux systems
+FROM python:3.10-slim
+
+# Install necessary dependencies
+RUN apt-get update && \
+    apt-get install -y git wget tar && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Clone the and install EEST repository
+RUN git clone https://github.com/ethereum/execution-spec-tests.git --branch devnet-4-updates --single-branch --depth 1
+WORKDIR execution-spec-tests
+RUN pip install uv && uv sync
+
+CMD ["bash"]
+
+# Usage:
+# docker build -t macos-consume-dev -f Dockerfile.dev .
+# docker run -it -e HIVE_SIMULATOR=http://<private_host_ip>:3000 macos-consume-dev
+# uv run consume rlp -v ...
