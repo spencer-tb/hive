@@ -1,0 +1,5 @@
+- client: ethereumjs
+  nametag: prague-devnet-5
+  build_args:
+      github: ethereumjs/ethereumjs-monorepo
+      tag: devnet-5
