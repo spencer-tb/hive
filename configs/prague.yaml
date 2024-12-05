@@ -1,5 +1,42 @@
+
+
+- client: go-ethereum
+  nametag: prague-devnet-5
+  dockerfile: git
+  build_args:
+    github: lightclient/go-ethereum
+    tag: prague-devnet-4 # TODO: add correct branch
+
+- client: nethermind
+  nametag: prague-devnet-5
+  dockerfile: git
+  build_args:
+    github: NethermindEth/nethermind
+    tag: pectra_devnet_4 # TODO: add correct branch
+
+- client: reth
+  nametag: prague-devnet-5
+  dockerfile: git
+  build_args:
+    github: paradigmxyz/reth
+    tag: onbjerg/devnet-4 # TODO: add correct branch
+
+- client: besu
+  nametag: prague-devnet-5
+  dockerfile: git
+  build_args:
+    github: hyperledger/besu
+    tag: pectra-devnet-4 # TODO: add correct branch
+
 - client: ethereumjs
   nametag: prague-devnet-5
   build_args:
       github: ethereumjs/ethereumjs-monorepo
-      tag: devnet-5
+      tag: devnet-5 # TODO: check if correct branch
+
+- client: erigon
+  nametag: prague-devnet-5
+  dockerfile: git
+  build_args:
+    github: erigontech/erigon
+    tag: pectra_e2 # TODO: add correct branch
