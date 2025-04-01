@@ -316,53 +316,58 @@ func (ec *HiveRPCEngineClient) ForkchoiceUpdatedV3(ctx context.Context, fcState 
 }
 
 // Get Payload API Calls
-
-func (ec *HiveRPCEngineClient) GetPayload(ctx context.Context, version int, payloadId *api.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, *bool, error) {
+func (ec *HiveRPCEngineClient) GetPayload(ctx context.Context, version int, payloadId *api.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, *bool, [][]byte, error) {
 	var (
 		executableData        typ.ExecutableData
 		blockValue            *big.Int
 		blobsBundle           *typ.BlobsBundle
+		requests              [][]byte
 		shouldOverrideBuilder *bool
 		err                   error
 		rpcString             = fmt.Sprintf("engine_getPayloadV%d", version)
 	)
 
 	if err = ec.PrepareDefaultAuthCallToken(); err != nil {
-		return executableData, nil, nil, nil, err
+		return executableData, nil, nil, nil, nil, err
 	}
 
-	if version >= 2 {
-		var response typ.ExecutionPayloadEnvelope
-		err = ec.c.CallContext(ctx, &response, rpcString, payloadId)
-		if response.ExecutionPayload != nil {
-			executableData = *response.ExecutionPayload
-		}
+	// Use a single response object and call for all versions
+	var response typ.ExecutionPayloadEnvelope
+	err = ec.c.CallContext(ctx, &response, rpcString, payloadId)
+	if response.ExecutionPayload != nil {
+		executableData = *response.ExecutionPayload
+	}
+
+	// Set version specific fields
+	if version >= 2 { // Shanghai
 		blockValue = response.BlockValue
-		blobsBundle = response.BlobsBundle
-		shouldOverrideBuilder = response.ShouldOverrideBuilder
-	} else {
-		err = ec.c.CallContext(ctx, &executableData, rpcString, payloadId)
+		if version >= 3 { // Cancun
+			blobsBundle = response.BlobsBundle
+			shouldOverrideBuilder = response.ShouldOverrideBuilder
+			if version >= 4 { // Prague
+				requests = response.Requests
+			}
+		}
 	}
-
-	return executableData, blockValue, blobsBundle, shouldOverrideBuilder, err
+	return executableData, blockValue, blobsBundle, shouldOverrideBuilder, requests, err
 }
 
 func (ec *HiveRPCEngineClient) GetPayloadV1(ctx context.Context, payloadId *api.PayloadID) (typ.ExecutableData, error) {
-	ed, _, _, _, err := ec.GetPayload(ctx, 1, payloadId)
+	ed, _, _, _, _, err := ec.GetPayload(ctx, 1, payloadId)
 	return ed, err
 }
 
 func (ec *HiveRPCEngineClient) GetPayloadV2(ctx context.Context, payloadId *api.PayloadID) (typ.ExecutableData, *big.Int, error) {
-	ed, bv, _, _, err := ec.GetPayload(ctx, 2, payloadId)
+	ed, bv, _, _, _, err := ec.GetPayload(ctx, 2, payloadId)
 	return ed, bv, err
 }
 
 func (ec *HiveRPCEngineClient) GetPayloadV3(ctx context.Context, payloadId *api.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, *bool, error) {
-	return ec.GetPayload(ctx, 3, payloadId)
+	ed, bv, bb, so, _, err := ec.GetPayload(ctx, 3, payloadId)
+	return ed, bv, bb, so, err
 }
 
-// GetPayloadV4 was added for Prague
-func (ec *HiveRPCEngineClient) GetPayloadV4(ctx context.Context, payloadId *api.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, *bool, error) {
+func (ec *HiveRPCEngineClient) GetPayloadV4(ctx context.Context, payloadId *api.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, *bool, [][]byte, error) {
 	return ec.GetPayload(ctx, 4, payloadId)
 }
 
@@ -412,11 +417,13 @@ func (ec *HiveRPCEngineClient) NewPayload(ctx context.Context, version int, payl
 	if err := ec.PrepareDefaultAuthCallToken(); err != nil {
 		return result, err
 	}
-
 	if version >= 4 {
-		err = ec.c.CallContext(ctx, &result, fmt.Sprintf("engine_newPayloadV%d", version), payload, payload.VersionedHashes, payload.ParentBeaconBlockRoot, payload.ExecutionRequests)
-	} else if version == 3 {
-		err = ec.c.CallContext(ctx, &result, "engine_newPayloadV3", payload, payload.VersionedHashes, payload.ParentBeaconBlockRoot)
+		if payload.Requests == nil {
+			payload.Requests = [][]byte{}
+		}
+		err = ec.c.CallContext(ctx, &result, fmt.Sprintf("engine_newPayloadV%d", version), payload, payload.VersionedHashes, payload.ParentBeaconBlockRoot, payload.Requests)
+	} else if version >= 3 {
+		err = ec.c.CallContext(ctx, &result, fmt.Sprintf("engine_newPayloadV%d", version), payload, payload.VersionedHashes, payload.ParentBeaconBlockRoot)
 	} else {
 		err = ec.c.CallContext(ctx, &result, fmt.Sprintf("engine_newPayloadV%d", version), payload)
 	}

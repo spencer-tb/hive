@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/hive/simulators/ethereum/engine/config/cancun"
+	"github.com/ethereum/hive/simulators/ethereum/engine/config/prague"
 )
 
 func (f *ForkConfig) ConfigGenesis(genesis *core.Genesis) error {
@@ -21,7 +22,7 @@ func (f *ForkConfig) ConfigGenesis(genesis *core.Genesis) error {
 		}
 	}
 	if f.PragueTimestamp != nil {
-		if err := cancun.ConfigGenesis(genesis, f.PragueTimestamp.Uint64()); err != nil {
+		if err := prague.ConfigGenesis(genesis, f.PragueTimestamp.Uint64()); err != nil {
 			return fmt.Errorf("failed to configure prague fork: %v", err)
 		}
 	}

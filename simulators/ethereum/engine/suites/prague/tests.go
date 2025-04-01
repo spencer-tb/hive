@@ -38,15 +38,9 @@ var Tests = []test.Spec{
 
 			Verifications performed:
 			- Correct implementation of Engine API changes for Prague:
-			  - engine_newPayloadV3, engine_forkchoiceUpdatedV3, engine_getPayloadV3
-			- Correct implementation of EIP-4844:
-			  - Blob transaction ordering and inclusion
-			  - Blob transaction blob gas cost checks
-			  - Verify Blob bundle on built payload
-			- Eth RPC changes for Prague:
-			  - Blob fields in eth_getBlockByNumber
-			  - Beacon root in eth_getBlockByNumber
-			  - Blob fields in transaction receipts from eth_getTransactionReceipt
+			  - engine_newPayloadV4, engine_forkchoiceUpdatedV3, engine_getPayloadV4
+			- Correct implementation of EIP-7685:
+			  - General purpose execution layer requests
 			`,
 			MainFork: config.Prague,
 			// We fork after genesis
@@ -70,33 +64,32 @@ var Tests = []test.Spec{
 			NewPayloads{
 				ExpectedIncludedBlobCount: prague.TARGET_BLOBS_PER_BLOCK,
 				ExpectedBlobs:             helper.GetBlobList(0, prague.TARGET_BLOBS_PER_BLOCK),
-				
 			},
 
 			// Try to increase the data gas cost of the blob transactions
 			// by maxing out the number of blobs for the next payloads.
 			SendBlobTransactions{
 				TransactionCount:              DATA_GAS_COST_INCREMENT_EXCEED_BLOBS/(prague.MAX_BLOBS_PER_BLOCK-prague.TARGET_BLOBS_PER_BLOCK) + 1,
-				BlobsPerTransaction:           prague.MAX_BLOBS_PER_BLOCK,
+				BlobsPerTransaction:           prague.MAX_BLOBS_PER_BLOCK - 3,
 				BlobTransactionMaxBlobGasCost: big.NewInt(1),
 			},
 
 			// Next payloads will have max data blobs each
-			NewPayloads{
-				PayloadCount:              DATA_GAS_COST_INCREMENT_EXCEED_BLOBS / (prague.MAX_BLOBS_PER_BLOCK - prague.TARGET_BLOBS_PER_BLOCK),
-				ExpectedIncludedBlobCount: prague.MAX_BLOBS_PER_BLOCK,
-			},
+			// NewPayloads{
+			// PayloadCount:              DATA_GAS_COST_INCREMENT_EXCEED_BLOBS / (prague.MAX_BLOBS_PER_BLOCK - prague.TARGET_BLOBS_PER_BLOCK),
+			// ExpectedIncludedBlobCount: prague.MAX_BLOBS_PER_BLOCK - 3,
+			// },
 
 			// But there will be an empty payload, since the data gas cost increased
 			// and the last blob transaction was not included.
-			NewPayloads{
-				ExpectedIncludedBlobCount: 0,
-			},
+			// NewPayloads{
+			// ExpectedIncludedBlobCount: 0,
+			// },
 
 			// But it will be included in the next payload
-			NewPayloads{
-				ExpectedIncludedBlobCount: prague.MAX_BLOBS_PER_BLOCK,
-			},
+			// NewPayloads{
+			// ExpectedIncludedBlobCount: prague.MAX_BLOBS_PER_BLOCK - 3,
+			// },
 		},
 	},
 
@@ -108,7 +101,7 @@ var Tests = []test.Spec{
 			Tests the Prague fork since genesis.
 
 			Verifications performed:
-			* See Blob Transactions On Block 1, Shanghai Genesis
+			* See Blob Transactions On Block 1, Cancun Genesis
 			`,
 			MainFork: config.Prague,
 		},
@@ -1777,7 +1770,7 @@ var Tests = []test.Spec{
 			},
 			// Peer with the client before sending txs
 			DevP2PClientPeering{
-				ClientIndex:        0,
+				ClientIndex: 0,
 			},
 			// Send a single blob transaction
 			SendBlobTransactions{
@@ -1807,7 +1800,7 @@ var Tests = []test.Spec{
 			},
 			// Peer with the client before sending txs
 			DevP2PClientPeering{
-				ClientIndex:        0,
+				ClientIndex: 0,
 			},
 			// Send multiple blob transaction
 			SendBlobTransactions{

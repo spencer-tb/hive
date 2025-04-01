@@ -503,10 +503,10 @@ func (step NewPayloads) Execute(t *TestContext) error {
 
 			},
 			OnGetPayload: func() {
-				// Get the latest blob bundle
+				// Get the latest blob bundle & requests
 				var (
 					blobBundle = t.CLMock.LatestBlobBundle
-					requests = &t.CLMock.LatestRequests
+					requests   = t.CLMock.LatestRequests
 					payload    = &t.CLMock.LatestPayloadBuilt
 				)
 
@@ -515,11 +515,10 @@ func (step NewPayloads) Execute(t *TestContext) error {
 					return
 				}
 				if blobBundle == nil {
-					t.Fatalf("FAIL: Error getting blobs bundle (payload %d/%d): blobBundle is nil", p+1, payloadCount)
+					t.Fatalf("FAIL: Error getting blobs bundle (payload %d/%d): %v", p+1, payloadCount, blobBundle)
 				}
-
 				if requests == nil {
-					t.Fatalf("FAIL: Error getting execution requests (payload %d/%d): requests is nil", p+1, payloadCount)
+					t.Fatalf("FAIL: Error getting execution requests (payload %d/%d): %v", p+1, payloadCount, requests)
 				}
 
 				_, blobDataInPayload, err := GetBlobDataInPayload(t.TestBlobTxPool, payload)

@@ -426,7 +426,7 @@ func (tec *TestEngineClient) TestEngineGetPayload(payloadID *api.PayloadID, payl
 	version := tec.EngineAPIVersionResolver.GetPayloadVersion(payloadAttributes.Timestamp)
 	ctx, cancel := context.WithTimeout(tec.TestContext, globals.RPCTimeout)
 	defer cancel()
-	payload, blockValue, blobBundle, shouldOverride, err := tec.Engine.GetPayload(ctx, version, payloadID)
+	payload, blockValue, blobBundle, shouldOverride, _, err := tec.Engine.GetPayload(ctx, version, payloadID)
 	if blobBundle != nil {
 		payload.VersionedHashes, err = blobBundle.VersionedHashes(cancun.BLOB_COMMITMENT_VERSION_KZG)
 		if err != nil {

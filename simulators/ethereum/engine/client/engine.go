@@ -38,8 +38,8 @@ type Engine interface {
 	GetPayloadV1(ctx context.Context, payloadId *api.PayloadID) (typ.ExecutableData, error)
 	GetPayloadV2(ctx context.Context, payloadId *api.PayloadID) (typ.ExecutableData, *big.Int, error)
 	GetPayloadV3(ctx context.Context, payloadId *api.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, *bool, error)
-	GetPayloadV4(ctx context.Context, payloadId *api.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, *bool, error)
-	GetPayload(ctx context.Context, version int, payloadId *api.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, *bool, error)
+	GetPayloadV4(ctx context.Context, payloadId *api.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, *bool, [][]byte, error)
+	GetPayload(ctx context.Context, version int, payloadId *api.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, *bool, [][]byte, error)
 
 	NewPayload(ctx context.Context, version int, payload *typ.ExecutableData) (api.PayloadStatusV1, error)
 	NewPayloadV1(ctx context.Context, payload *typ.ExecutableData) (api.PayloadStatusV1, error)
@@ -91,6 +91,7 @@ var (
 	Pending                        = big.NewInt(-2)
 	Finalized                      = big.NewInt(-3)
 	Safe                           = big.NewInt(-4)
-	LatestForkchoiceUpdatedVersion = 3 // 3 = Cancun and Prague
-	LatestNewPayloadVersion        = 4 // 4 = Prague
+	LatestForkchoiceUpdatedVersion = 3
+	LatestNewPayloadVersion        = 4
+	LatestGetPayloadVersion        = 4
 )

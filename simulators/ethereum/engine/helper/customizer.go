@@ -317,7 +317,6 @@ type CustomPayloadData struct {
 	ParentBeaconRoot          *common.Hash
 	RemoveParentBeaconRoot    bool
 	VersionedHashesCustomizer VersionedHashesCustomizer
-	ExecutionRequests    	  []hexutil.Bytes
 }
 
 var _ PayloadCustomizer = (*CustomPayloadData)(nil)
@@ -467,14 +466,6 @@ func (customData *CustomPayloadData) CustomizePayload(randSource *rand.Rand, bas
 		}
 	} else {
 		result.VersionedHashes = basePayload.VersionedHashes
-	}
-
-	if customData.ExecutionRequests != nil {
-		result.ExecutionRequests = customData.ExecutionRequests
-	} else if basePayload.ExecutionRequests != nil {
-		result.ExecutionRequests = basePayload.ExecutionRequests
-	} else {
-		result.ExecutionRequests = []hexutil.Bytes{}
 	}
 
 	return result, nil

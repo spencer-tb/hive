@@ -11,7 +11,6 @@ import (
 	"time"
 
 	api "github.com/ethereum/go-ethereum/beacon/engine"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/forkid"
 	"github.com/ethereum/hive/simulators/ethereum/engine/client"
@@ -105,7 +104,7 @@ type CLMocker struct {
 	LatestBlockValue            *big.Int
 	LatestBlobBundle            *typ.BlobsBundle
 	LatestShouldOverrideBuilder *bool
-	LatestRequests 				[]hexutil.Bytes
+	LatestRequests 		  		[][]byte
 	LatestPayloadAttributes     typ.PayloadAttributes
 	LatestExecutedPayload       typ.ExecutableData
 	LatestForkchoice            api.ForkchoiceStateV1
@@ -451,8 +450,7 @@ func (cl *CLMocker) GetNextPayload() {
 	ctx, cancel := context.WithTimeout(cl.TestContext, globals.RPCTimeout)
 	defer cancel()
 	version := cl.ForkConfig.GetPayloadVersion(cl.LatestPayloadAttributes.Timestamp)
-	cl.LatestPayloadBuilt, cl.LatestBlockValue, cl.LatestBlobBundle, cl.LatestShouldOverrideBuilder, err = cl.NextBlockProducer.GetPayload(ctx, version, cl.NextPayloadID)
-	cl.LatestRequests = cl.LatestPayloadBuilt.ExecutionRequests
+	cl.LatestPayloadBuilt, cl.LatestBlockValue, cl.LatestBlobBundle, cl.LatestShouldOverrideBuilder, cl.LatestRequests, err = cl.NextBlockProducer.GetPayload(ctx, version, cl.NextPayloadID)
 
 	if err != nil {
 		cl.Fatalf("CLMocker: Could not getPayload (%v, %v): %v", cl.NextBlockProducer.ID(), cl.NextPayloadID, err)

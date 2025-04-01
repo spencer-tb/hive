@@ -12,6 +12,7 @@ import (
 	beacon "github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
@@ -344,12 +345,10 @@ func encodeBlockNumber(number uint64) []byte {
 }
 
 func (n *GethNode) SetBlock(block *types.Block, parentNumber uint64, parentRoot common.Hash) error {
-	db := n.eth.ChainDb()
-
-	// TODO: is it safe to remove below?
+	// TODO: is it safe to comment below?
 	// parentTd := n.eth.BlockChain().GetTd(block.ParentHash(), block.NumberU64()-1)
+	db := n.eth.ChainDb()
 	//rawdb.WriteTd(db, block.Hash(), block.NumberU64(), parentTd.Add(parentTd, block.Difficulty()))
-	
 	rawdb.WriteBlock(db, block)
 
 	// write real info (fixes fake number test)
@@ -472,7 +471,11 @@ func (n *GethNode) NewPayloadV4(ctx context.Context, pl *typ.ExecutableData) (be
 	if pl.VersionedHashes == nil {
 		return beacon.PayloadStatusV1{}, fmt.Errorf("versioned hashes are nil")
 	}
-	resp, err := n.api.NewPayloadV4(ed, *pl.VersionedHashes, pl.ParentBeaconBlockRoot, pl.ExecutionRequests)
+	requests := make([]hexutil.Bytes, len(pl.Requests))
+	for i, req := range pl.Requests {
+		requests[i] = hexutil.Bytes(req)
+	}
+	resp, err := n.api.NewPayloadV4(ed, *pl.VersionedHashes, pl.ParentBeaconBlockRoot, requests)
 	n.latestPayloadStatusReponse = &resp
 	return resp, err
 }
@@ -557,35 +560,35 @@ func (n *GethNode) GetPayloadV3(ctx context.Context, payloadId *beacon.PayloadID
 	return ed, p.BlockValue, blobsBundle, &p.Override, err
 }
 
-func (n *GethNode) GetPayloadV4(ctx context.Context, payloadId *beacon.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, *bool, error) {
+func (n *GethNode) GetPayloadV4(ctx context.Context, payloadId *beacon.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, *bool, [][]byte, error) {
 	p, err := n.api.GetPayloadV4(*payloadId)
 	if p == nil || err != nil {
-		return typ.ExecutableData{}, nil, nil, nil, err
+		return typ.ExecutableData{}, nil, nil, nil, nil, err
 	}
 	ed, err := typ.FromBeaconExecutableData(p.ExecutionPayload)
 	blobsBundle := &typ.BlobsBundle{}
 	if err := blobsBundle.FromBeaconBlobsBundle(p.BlobsBundle); err != nil {
-		return typ.ExecutableData{}, nil, nil, nil, err
+		return typ.ExecutableData{}, nil, nil, nil, nil, err
 	}
-
-	return ed, p.BlockValue, blobsBundle, &p.Override, err
+	return ed, p.BlockValue, blobsBundle, &p.Override, p.Requests, err
 }
 
-func (n *GethNode) GetPayload(ctx context.Context, version int, payloadId *beacon.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, *bool, error) {
+func (n *GethNode) GetPayload(ctx context.Context, version int, payloadId *beacon.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, *bool, [][]byte, error) {
 
 	switch version {
 	case 1:
 		ed, err := n.GetPayloadV1(ctx, payloadId)
-		return ed, nil, nil, nil, err
+		return ed, nil, nil, nil, nil, err
 	case 2:
 		ed, value, err := n.GetPayloadV2(ctx, payloadId)
-		return ed, value, nil, nil, err
+		return ed, value, nil, nil, nil, err
 	case 3:
-		return n.GetPayloadV3(ctx, payloadId)
+		ed, value, blobsBundle, override, err := n.GetPayloadV3(ctx, payloadId)
+		return ed, value, blobsBundle, override, nil, err
 	case 4:
 		return n.GetPayloadV4(ctx, payloadId)
 	default:
-		return typ.ExecutableData{}, nil, nil, nil, fmt.Errorf("unknown version %d", version)
+		return typ.ExecutableData{}, nil, nil, nil, nil, fmt.Errorf("unknown version %d", version)
 	}
 }
 
