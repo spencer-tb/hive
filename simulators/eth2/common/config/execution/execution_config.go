@@ -254,6 +254,11 @@ func BuildChainConfig(
 			BeaconForkTime: config.DenebForkEpoch,
 			ChainConfig:    &chainConfig.CancunTime,
 		},
+		{
+			ForkName:       "electra",
+			BeaconForkTime: config.ElectraForkEpoch,
+			ChainConfig:    &chainConfig.PragueTime,
+		},
 	} {
 		if forkConfig.BeaconForkTime != nil {
 			if previousForkTime == nil {
@@ -332,6 +337,23 @@ func BuildExecutionGenesis(
 		}
 	}
 
+	if chainConfig.PragueTime != nil {
+		var beaconRootContractAcc core.GenesisAccount
+		if err := json.Unmarshal([]byte(embeddedBeaconRootContract), &beaconRootContractAcc); err != nil {
+			panic(err)
+		}
+		genesis.Alloc[beaconRootContractAddress] = beaconRootContractAcc
+
+		if genesis.Timestamp >= *chainConfig.PragueTime {
+			if genesis.BlobGasUsed == nil {
+				genesis.BlobGasUsed = new(uint64)
+			}
+			if genesis.ExcessBlobGas == nil {
+				genesis.ExcessBlobGas = new(uint64)
+			}
+		}
+	}
+
 	wrappedGenesis := &ExecutionGenesis{
 		Genesis:        genesis,
 		Block:          genesis.ToBlock(),
@@ -386,6 +408,9 @@ func (conf *ExecutionGenesis) ToParams(
 	}
 	if conf.Genesis.Config.CancunTime != nil {
 		params["HIVE_CANCUN_TIMESTAMP"] = fmt.Sprint(*conf.Genesis.Config.CancunTime)
+	}
+	if conf.Genesis.Config.PragueTime != nil {
+		params["HIVE_PRAGUE_TIMESTAMP"] = fmt.Sprint(*conf.Genesis.Config.PragueTime)
 	}
 	if conf.Genesis.Config.Clique != nil {
 		params["HIVE_CLIQUE_PERIOD"] = fmt.Sprint(conf.Genesis.Config.Clique.Period)

@@ -215,7 +215,7 @@ func GetPrecomputedKZG(blobId BlobID) (*typ.KZGCommitment, *typ.KZGProof) {
 
 }
 
-//go:generate go run github.com/ethereum/hive/simulators/ethereum/engine/helper/kzg_precomputer 10000
+//go:generate kzg_precomputer 10000
 func (blobId BlobID) GenerateBlob() (*typ.Blob, *typ.KZGCommitment, *typ.KZGProof, error) {
 	blob := typ.Blob{}
 	if err := blobId.FillBlob(&blob); err != nil {
@@ -332,7 +332,7 @@ func (tc *BlobTransactionCreator) MakeTransaction(sender SenderAccount, nonce ui
 
 	key := sender.GetKey()
 
-	signedTx, err := types.SignNewTx(key, types.NewCancunSigner(globals.ChainID), sbtx)
+	signedTx, err := types.SignNewTx(key, types.NewPragueSigner(globals.ChainID), sbtx)
 	if err != nil {
 		return nil, err
 	}

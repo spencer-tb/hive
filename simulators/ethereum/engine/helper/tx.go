@@ -217,7 +217,7 @@ func CustomizeTransaction(baseTransaction *types.Transaction, sender SenderAccou
 			// Use the default value if an invaild chain ID was not specified
 			customData.ChainID = baseTransaction.ChainId()
 		}
-		signer := types.NewCancunSigner(customData.ChainID)
+		signer := types.NewPragueSigner(customData.ChainID)
 		var err error
 		if modifiedTx, err = types.SignTx(modifiedTx, signer, sender.GetKey()); err != nil {
 			return nil, err
@@ -368,7 +368,7 @@ func (tc *BaseTransactionCreator) MakeTransaction(sender SenderAccount, nonce ui
 		if tc.BlobCount != nil {
 			blobCount = tc.BlobCount.Uint64()
 		} else {
-			blobCount = cancun.MAX_BLOBS_PER_BLOCK
+			blobCount = cancun.MAX_BLOBS_PER_BLOCK // this will work for prague
 		}
 
 		// Need tx wrap data that will pass blob verification
@@ -407,7 +407,7 @@ func (tc *BaseTransactionCreator) MakeTransaction(sender SenderAccount, nonce ui
 
 	tx := types.NewTx(newTxData)
 	key := sender.GetKey()
-	return types.SignTx(tx, types.NewCancunSigner(globals.ChainID), key)
+	return types.SignTx(tx, types.NewPragueSigner(globals.ChainID), key)
 }
 
 // Create a contract filled with zeros without going over the specified GasLimit

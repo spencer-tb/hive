@@ -15,6 +15,7 @@ import (
 	suite_cancun "github.com/ethereum/hive/simulators/ethereum/engine/suites/cancun"
 	suite_engine "github.com/ethereum/hive/simulators/ethereum/engine/suites/engine"
 	suite_excap "github.com/ethereum/hive/simulators/ethereum/engine/suites/exchange_capabilities"
+	suite_prague "github.com/ethereum/hive/simulators/ethereum/engine/suites/prague"
 	suite_withdrawals "github.com/ethereum/hive/simulators/ethereum/engine/suites/withdrawals"
 	"github.com/ethereum/hive/simulators/ethereum/engine/test"
 )
@@ -51,6 +52,11 @@ var (
 		Description: `
 	Test Engine API on Cancun.`[1:],
 	}
+	prague = hivesim.Suite{
+		Name: "engine-prague",
+		Description: `
+	Test Engine API on Prague.`[1:],
+	}
 )
 
 func main() {
@@ -84,6 +90,12 @@ func main() {
 		Run:         makeRunner(suite_cancun.Tests, "full"),
 		AlwaysRun:   true,
 	})
+	prague.Add(hivesim.TestSpec{
+		Name:        "engine-prague test loader",
+		Description: "",
+		Run:         makeRunner(suite_prague.Tests, "full"),
+		AlwaysRun:   true,
+	})
 	simulator := hivesim.New()
 
 	// Mark suites for execution
@@ -93,6 +105,7 @@ func main() {
 	// hivesim.MustRunSuite(simulator, syncSuite)
 	hivesim.MustRunSuite(simulator, withdrawals)
 	hivesim.MustRunSuite(simulator, cancun)
+	hivesim.MustRunSuite(simulator, prague)
 }
 
 func makeRunner(tests []test.Spec, nodeType string) func(t *hivesim.T) {
@@ -143,7 +156,7 @@ func makeRunner(tests []test.Spec, nodeType string) func(t *hivesim.T) {
 			forkConfig.ConfigGenesis(genesis)
 			genesisStartOption, err := helper.GenesisStartOption(genesis)
 			if err != nil {
-				panic("unable to inject genmsis")
+				panic("unable to inject genesis")
 			}
 
 			// Configure Forks.
@@ -155,6 +168,9 @@ func makeRunner(tests []test.Spec, nodeType string) func(t *hivesim.T) {
 				newParams = newParams.Set("HIVE_SHANGHAI_TIMESTAMP", fmt.Sprintf("%d", forkConfig.ShanghaiTimestamp))
 				if forkConfig.CancunTimestamp != nil {
 					newParams = newParams.Set("HIVE_CANCUN_TIMESTAMP", fmt.Sprintf("%d", forkConfig.CancunTimestamp))
+					if forkConfig.PragueTimestamp != nil {
+						newParams = newParams.Set("HIVE_PRAGUE_TIMESTAMP", fmt.Sprintf("%d", forkConfig.PragueTimestamp))
+					}
 				}
 			}
 

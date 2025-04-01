@@ -12,6 +12,7 @@ type ForkConfig struct {
 	BellatrixForkEpoch      *big.Int `json:"bellatrix_fork_epoch,omitempty"`
 	CapellaForkEpoch        *big.Int `json:"capella_fork_epoch,omitempty"`
 	DenebForkEpoch          *big.Int `json:"deneb_fork_epoch,omitempty"`
+	ElectraForkEpoch        *big.Int `json:"electra_fork_epoch,omitempty"`
 }
 
 // Choose a configuration value. `b` takes precedence
@@ -38,6 +39,7 @@ func (a *ForkConfig) Join(b *ForkConfig) *ForkConfig {
 	c.BellatrixForkEpoch = choose(a.BellatrixForkEpoch, b.BellatrixForkEpoch)
 	c.CapellaForkEpoch = choose(a.CapellaForkEpoch, b.CapellaForkEpoch)
 	c.DenebForkEpoch = choose(a.DenebForkEpoch, b.DenebForkEpoch)
+	c.ElectraForkEpoch = choose(a.ElectraForkEpoch, b.ElectraForkEpoch)
 	c.TerminalTotalDifficulty = choose(
 		a.TerminalTotalDifficulty,
 		b.TerminalTotalDifficulty,
@@ -46,7 +48,9 @@ func (a *ForkConfig) Join(b *ForkConfig) *ForkConfig {
 }
 
 func (c *ForkConfig) GenesisBeaconFork() string {
-	if c.DenebForkEpoch != nil && c.DenebForkEpoch.Uint64() == 0 {
+	if c.ElectraForkEpoch != nil && c.ElectraForkEpoch.Uint64() == 0 {
+		return "electra"
+	} else if c.DenebForkEpoch != nil && c.DenebForkEpoch.Uint64() == 0 {
 		return "deneb"
 	} else if c.CapellaForkEpoch != nil && c.CapellaForkEpoch.Uint64() == 0 {
 		return "capella"

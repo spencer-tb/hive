@@ -1,0 +1,40 @@
+- client: go-ethereum
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: ethereum/go-ethereum
+    tag: master
+- client: besu
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: hyperledger/besu
+    tag: main
+- client: reth
+  dockerfile: git
+  build_args:
+    github: paradigmxyz/reth
+    tag: main
+- client: nethermind
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: NethermindEth/nethermind
+    tag: release/1.31.6
+- client: erigon
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: erigontech/erigon
+    tag: main
+- client: ethereumjs
+  nametag: default
+  build_args:
+    github: ethereumjs/ethereumjs-monorepo
+    tag: master
+- client: nimbus-el
+  nametag: default
+  build_args:
+    github: status-im/nimbus-eth1
+    tag: master
+

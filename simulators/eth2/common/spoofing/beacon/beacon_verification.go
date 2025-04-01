@@ -17,12 +17,14 @@ const (
 	EngineNewPayloadV1        = "engine_newPayloadV1"
 	EngineNewPayloadV2        = "engine_newPayloadV2"
 	EngineNewPayloadV3        = "engine_newPayloadV3"
+	EngineNewPayloadV4        = "engine_newPayloadV4"
 )
 
 var EngineNewPayload = []string{
 	EngineNewPayloadV1,
 	EngineNewPayloadV2,
 	EngineNewPayloadV3,
+	EngineNewPayloadV4,
 }
 
 var EngineForkchoiceUpdated = []string{

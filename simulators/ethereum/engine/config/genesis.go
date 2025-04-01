@@ -20,5 +20,10 @@ func (f *ForkConfig) ConfigGenesis(genesis *core.Genesis) error {
 			return fmt.Errorf("failed to configure cancun fork: %v", err)
 		}
 	}
+	if f.PragueTimestamp != nil {
+		if err := cancun.ConfigGenesis(genesis, f.PragueTimestamp.Uint64()); err != nil {
+			return fmt.Errorf("failed to configure prague fork: %v", err)
+		}
+	}
 	return nil
 }

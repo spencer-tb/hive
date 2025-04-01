@@ -109,9 +109,10 @@ func (cfg *generatorConfig) createBlockModifiers() (list []*modifierInstance) {
 func (g *generator) run() error {
 	db := rawdb.NewMemoryDatabase()
 	engine := beacon.New(ethash.NewFaker())
-	if g.genesis.Config.MergeNetsplitBlock != nil {
-		engine.TestingTTDBlock(g.genesis.Config.MergeNetsplitBlock.Uint64())
-	}
+	// TODO: is it safe to remove below?
+	// if g.genesis.Config.MergeNetsplitBlock != nil {
+	// 	engine.TestingTTDBlock(g.genesis.Config.MergeNetsplitBlock.Uint64())
+	// }
 
 	// Init genesis block.
 	trieconfig := *triedb.HashDefaults
@@ -177,7 +178,7 @@ func (g *generator) setDifficulty(gen *core.BlockGen) {
 }
 
 func (g *generator) setParentBeaconRoot(gen *core.BlockGen) {
-	if g.genesis.Config.IsCancun(gen.Number(), gen.Timestamp()) {
+	if g.genesis.Config.IsCancun(gen.Number(), gen.Timestamp()) || g.genesis.Config.IsPrague(gen.Number(), gen.Timestamp()) {
 		var h common.Hash
 		g.rand.Read(h[:])
 		gen.SetParentBeaconRoot(h)

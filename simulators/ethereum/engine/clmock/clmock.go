@@ -11,6 +11,7 @@ import (
 	"time"
 
 	api "github.com/ethereum/go-ethereum/beacon/engine"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/forkid"
 	"github.com/ethereum/hive/simulators/ethereum/engine/client"
@@ -104,6 +105,7 @@ type CLMocker struct {
 	LatestBlockValue            *big.Int
 	LatestBlobBundle            *typ.BlobsBundle
 	LatestShouldOverrideBuilder *bool
+	LatestRequests 				[]hexutil.Bytes
 	LatestPayloadAttributes     typ.PayloadAttributes
 	LatestExecutedPayload       typ.ExecutableData
 	LatestForkchoice            api.ForkchoiceStateV1
@@ -450,6 +452,7 @@ func (cl *CLMocker) GetNextPayload() {
 	defer cancel()
 	version := cl.ForkConfig.GetPayloadVersion(cl.LatestPayloadAttributes.Timestamp)
 	cl.LatestPayloadBuilt, cl.LatestBlockValue, cl.LatestBlobBundle, cl.LatestShouldOverrideBuilder, err = cl.NextBlockProducer.GetPayload(ctx, version, cl.NextPayloadID)
+	cl.LatestRequests = cl.LatestPayloadBuilt.ExecutionRequests
 
 	if err != nil {
 		cl.Fatalf("CLMocker: Could not getPayload (%v, %v): %v", cl.NextBlockProducer.ID(), cl.NextPayloadID, err)
@@ -470,10 +473,10 @@ func (cl *CLMocker) GetNextPayload() {
 		cl.Fatalf("CLMocker: Incorrect Number on payload built: %v != %v", cl.LatestPayloadBuilt.Number, cl.LatestHeader.Number.Uint64()+1)
 	}
 
-	if cl.IsCancun(cl.LatestPayloadBuilt.Timestamp) {
+	if cl.IsCancun(cl.LatestPayloadBuilt.Timestamp) || cl.IsPrague(cl.LatestPayloadBuilt.Timestamp) {
 		// Check if we have blobs to include in the broadcast
 		if cl.LatestBlobBundle == nil {
-			cl.Fatalf("CLMocker: No blob bundle on cancun")
+			cl.Fatalf("CLMocker: No blob bundle on cancun or prague")
 		}
 		// Broadcast the blob bundle to all clients
 		cl.LatestPayloadBuilt.VersionedHashes, err = cl.LatestBlobBundle.VersionedHashes(cancun.BLOB_COMMITMENT_VERSION_KZG)
@@ -482,6 +485,8 @@ func (cl *CLMocker) GetNextPayload() {
 		}
 		cl.LatestPayloadBuilt.ParentBeaconBlockRoot = cl.LatestPayloadAttributes.BeaconRoot
 	}
+
+
 	cl.LatestPayloadBuilt.PayloadAttributes = cl.LatestPayloadAttributes
 }
 

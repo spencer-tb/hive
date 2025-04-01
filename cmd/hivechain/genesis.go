@@ -64,6 +64,9 @@ func (cfg *generatorConfig) createChainConfig() *params.ChainConfig {
 	if _, ok := forks["cancun"]; ok {
 		chaincfg.BlobScheduleConfig = new(params.BlobScheduleConfig)
 	}
+	if _, ok := forks["prague"]; ok {
+		chaincfg.BlobScheduleConfig = new(params.BlobScheduleConfig)
+	}
 	for fork, b := range forks {
 		timestamp := cfg.blockTimestamp(b)
 
