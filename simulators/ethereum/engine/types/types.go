@@ -112,6 +112,56 @@ type payloadAttributesMarshaling struct {
 	Timestamp hexutil.Uint64
 }
 
+/*
+
+// Request type EIP-7685
+type Request struct {
+	RequestType byte
+	RequestData []byte
+}
+
+func NewRequest(requestType byte, requestData []byte) (Request, error) {
+	// Deposit is requestType 0, Withdrawal requestType 1 and Consolidation requestType 2
+	if requestType > 2 {
+		return Request{}, fmt.Errorf("invalid requestType, expected 0/1/2 but got %v", requestType)
+	}
+
+	if len(requestData) == 0 {
+		return Request{}, fmt.Errorf("empty requestData is not allowed")
+	}
+
+	
+	return Request {
+		RequestType: requestType,
+		RequestData: requestData,
+	}, nil
+
+}
+
+func (r Request) RequestToBytes() []byte {
+	// requestType +(append) requestData
+	return append([]byte{r.RequestType}, r.RequestData...)
+}
+
+func (r Request) GetType() string {
+	if len(r.RequestData) == 0 {
+		return "InvalidRequest" // someone passes zero-valued request as result of providing invalid parameters to constructor
+	}
+
+	switch r.RequestType {
+	case 0:
+		return "DepositRequest"
+	case 1:
+		return "WithdrawalRequest"
+	case 2:
+		return "ConsolidationRequest"
+	default:
+		return "InvalidRequest" // does not happen if everyone uses the constructor NewRequest
+	}
+}
+*/
+
+
 //go:generate go run github.com/fjl/gencodec -type ExecutableData -field-override executableDataMarshaling -out gen_ed.go
 
 // ExecutableData is the data necessary to execute an EL payload.
@@ -135,8 +185,9 @@ type ExecutableData struct {
 	ExcessBlobGas *uint64             `json:"excessBlobGas,omitempty"`
 
 	// NewPayload parameters
-	VersionedHashes       *[]common.Hash `json:"-"`
-	ParentBeaconBlockRoot *common.Hash   `json:"-"`
+	VersionedHashes       *[]common.Hash 	`json:"-"`
+	ParentBeaconBlockRoot *common.Hash   	`json:"-"`
+	ExecutionRequests     []hexutil.Bytes	`json:"-"` // PayloadV4 Prague
 
 	// Payload Attributes used to build the block
 	PayloadAttributes PayloadAttributes `json:"-"`
@@ -163,6 +214,26 @@ type ExecutionPayloadEnvelope struct {
 	BlockValue            *big.Int        `json:"blockValue"             gencodec:"required"`
 	BlobsBundle           *BlobsBundle    `json:"blobsBundle,omitempty"`
 	ShouldOverrideBuilder *bool           `json:"shouldOverrideBuilder,omitempty"`
+}
+
+type ExecutionPayloadEnvelopePrague struct {
+	ExecutionPayload *ExecutableData `json:"executionPayload"  gencodec:"required"`
+	BlockValue       *big.Int        `json:"blockValue"  gencodec:"required"`
+	BlobsBundle      *BlobsBundleV1  `json:"blobsBundle"`
+	Requests         [][]byte        `json:"executionRequests"`
+	Override         bool            `json:"shouldOverrideBuilder"`
+	Witness          *hexutil.Bytes  `json:"witness,omitempty"`
+}
+
+type BlobsBundleV1 struct {
+	Commitments []hexutil.Bytes `json:"commitments"`
+	Proofs      []hexutil.Bytes `json:"proofs"`
+	Blobs       []hexutil.Bytes `json:"blobs"`
+}
+
+type BlobAndProofV1 struct {
+	Blob  hexutil.Bytes `json:"blob"`
+	Proof hexutil.Bytes `json:"proof"`
 }
 
 type executionPayloadEnvelopeMarshaling struct {

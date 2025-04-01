@@ -118,7 +118,7 @@ func (g *generator) block2fcu(b *types.Block) *rpcRequest {
 	var method string
 	cfg := g.genesis.Config
 	switch {
-	case cfg.IsCancun(b.Number(), b.Time()):
+	case cfg.IsCancun(b.Number(), b.Time()), cfg.IsPrague(b.Number(), b.Time()):
 		method = "engine_forkchoiceUpdatedV3"
 	case cfg.IsShanghai(b.Number(), b.Time()):
 		method = "engine_forkchoiceUpdatedV2"

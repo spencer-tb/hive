@@ -74,7 +74,7 @@ func (s GethNodeEngineStarter) StartGethNode(T *hivesim.T, testContext context.C
 		for i, bootClient := range bootClients {
 			enodes[i], err = bootClient.EnodeURL()
 			if err != nil {
-				return nil, fmt.Errorf("Unable to obtain bootnode: %v", err)
+				return nil, fmt.Errorf("unable to obtain bootnode: %v", err)
 			}
 		}
 	}
@@ -251,7 +251,7 @@ func (n *GethNode) ReOrgBackBlockChain(N uint64, currentBlock *types.Header) (*t
 	for ; N > 0; N-- {
 		currentBlock = n.eth.BlockChain().GetHeaderByHash(currentBlock.ParentHash)
 		if currentBlock == nil {
-			return nil, fmt.Errorf("Unable to re-org back")
+			return nil, fmt.Errorf("unable to re-org back")
 		}
 	}
 
@@ -460,6 +460,20 @@ func (n *GethNode) NewPayloadV3(ctx context.Context, pl *typ.ExecutableData) (be
 	return resp, err
 }
 
+func (n *GethNode) NewPayloadV4(ctx context.Context, pl *typ.ExecutableData) (beacon.PayloadStatusV1, error) {
+	n.latestPayloadSent = pl
+	ed, err := typ.ToBeaconExecutableData(pl)
+	if err != nil {
+		return beacon.PayloadStatusV1{}, err
+	}
+	if pl.VersionedHashes == nil {
+		return beacon.PayloadStatusV1{}, fmt.Errorf("versioned hashes are nil")
+	}
+	resp, err := n.api.NewPayloadV4(ed, *pl.VersionedHashes, pl.ParentBeaconBlockRoot, pl.ExecutionRequests)
+	n.latestPayloadStatusReponse = &resp
+	return resp, err
+}
+
 func (n *GethNode) ForkchoiceUpdated(ctx context.Context, version int, fcs *beacon.ForkchoiceStateV1, payload *typ.PayloadAttributes) (beacon.ForkChoiceResponse, error) {
 	switch version {
 	case 1:
@@ -540,6 +554,19 @@ func (n *GethNode) GetPayloadV3(ctx context.Context, payloadId *beacon.PayloadID
 	return ed, p.BlockValue, blobsBundle, &p.Override, err
 }
 
+func (n *GethNode) GetPayloadV4(ctx context.Context, payloadId *beacon.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, *bool, error) {
+	p, err := n.api.GetPayloadV4(*payloadId)
+	if p == nil || err != nil {
+		return typ.ExecutableData{}, nil, nil, nil, err
+	}
+	ed, err := typ.FromBeaconExecutableData(p.ExecutionPayload)
+	blobsBundle := &typ.BlobsBundle{}
+	if err := blobsBundle.FromBeaconBlobsBundle(p.BlobsBundle); err != nil {
+		return typ.ExecutableData{}, nil, nil, nil, err
+	}
+	return ed, p.BlockValue, blobsBundle, &p.Override, err
+}
+
 func (n *GethNode) GetPayload(ctx context.Context, version int, payloadId *beacon.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, *bool, error) {
 
 	switch version {
@@ -551,6 +578,8 @@ func (n *GethNode) GetPayload(ctx context.Context, version int, payloadId *beaco
 		return ed, value, nil, nil, err
 	case 3:
 		return n.GetPayloadV3(ctx, payloadId)
+	case 4:
+		return n.GetPayloadV4(ctx, payloadId)
 	default:
 		return typ.ExecutableData{}, nil, nil, nil, fmt.Errorf("unknown version %d", version)
 	}

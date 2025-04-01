@@ -183,6 +183,9 @@ func (s BaseSpec) GetForkConfig() *config.ForkConfig {
 	} else if mainFork == config.Cancun {
 		forkConfig.ShanghaiTimestamp = new(big.Int).SetUint64(previousForkTime)
 		forkConfig.CancunTimestamp = new(big.Int).SetUint64(forkTime)
+	} else if mainFork == config.Prague {
+		forkConfig.CancunTimestamp = new(big.Int).SetUint64(previousForkTime)
+		forkConfig.PragueTimestamp = new(big.Int).SetUint64(forkTime)
 	} else {
 		panic(fmt.Errorf("unknown fork: %s", mainFork))
 	}
@@ -234,4 +237,5 @@ func (s BaseSpec) IsMiningDisabled() bool {
 
 var LatestFork = config.ForkConfig{
 	ShanghaiTimestamp: big.NewInt(0),
+	CancunTimestamp: big.NewInt(1),
 }

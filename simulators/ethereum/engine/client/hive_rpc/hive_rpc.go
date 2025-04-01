@@ -361,6 +361,11 @@ func (ec *HiveRPCEngineClient) GetPayloadV3(ctx context.Context, payloadId *api.
 	return ec.GetPayload(ctx, 3, payloadId)
 }
 
+// GetPayloadV4 was added for Prague
+func (ec *HiveRPCEngineClient) GetPayloadV4(ctx context.Context, payloadId *api.PayloadID) (typ.ExecutableData, *big.Int, *typ.BlobsBundle, *bool, error) {
+	return ec.GetPayload(ctx, 4, payloadId)
+}
+
 // Get Payload Bodies API Calls
 func (ec *HiveRPCEngineClient) GetPayloadBodiesByRangeV1(ctx context.Context, start uint64, count uint64) ([]*typ.ExecutionPayloadBodyV1, error) {
 	var (
@@ -430,6 +435,12 @@ func (ec *HiveRPCEngineClient) NewPayloadV2(ctx context.Context, payload *typ.Ex
 func (ec *HiveRPCEngineClient) NewPayloadV3(ctx context.Context, payload *typ.ExecutableData) (api.PayloadStatusV1, error) {
 	ec.latestPayloadSent = payload
 	return ec.NewPayload(ctx, 3, payload)
+}
+
+// NewPayloadV4 was added for Prague
+func (ec *HiveRPCEngineClient) NewPayloadV4(ctx context.Context, payload *typ.ExecutableData) (api.PayloadStatusV1, error) {
+	ec.latestPayloadSent = payload
+	return ec.NewPayload(ctx, 4, payload)
 }
 
 // Exchange Transition Configuration API Call Methods
