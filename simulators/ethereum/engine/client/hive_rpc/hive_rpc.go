@@ -412,8 +412,9 @@ func (ec *HiveRPCEngineClient) NewPayload(ctx context.Context, version int, payl
 	if err := ec.PrepareDefaultAuthCallToken(); err != nil {
 		return result, err
 	}
-
-	if version >= 3 {
+	if version >= 4 {
+		err = ec.c.CallContext(ctx, &result, fmt.Sprintf("engine_newPayloadV%d", version), payload, payload.VersionedHashes, payload.ParentBeaconBlockRoot, payload.Requests)
+	} else if version >= 3 {
 		err = ec.c.CallContext(ctx, &result, fmt.Sprintf("engine_newPayloadV%d", version), payload, payload.VersionedHashes, payload.ParentBeaconBlockRoot)
 	} else {
 		err = ec.c.CallContext(ctx, &result, fmt.Sprintf("engine_newPayloadV%d", version), payload)
