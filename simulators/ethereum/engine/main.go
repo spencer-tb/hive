@@ -168,6 +168,9 @@ func makeRunner(tests []test.Spec, nodeType string) func(t *hivesim.T) {
 				newParams = newParams.Set("HIVE_SHANGHAI_TIMESTAMP", fmt.Sprintf("%d", forkConfig.ShanghaiTimestamp))
 				if forkConfig.CancunTimestamp != nil {
 					newParams = newParams.Set("HIVE_CANCUN_TIMESTAMP", fmt.Sprintf("%d", forkConfig.CancunTimestamp))
+					if forkConfig.PragueTimestamp != nil {
+						newParams = newParams.Set("HIVE_PRAGUE_TIMESTAMP", fmt.Sprintf("%d", forkConfig.PragueTimestamp))
+					}
 				}
 			}
 

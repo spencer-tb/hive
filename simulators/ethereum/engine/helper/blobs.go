@@ -332,7 +332,7 @@ func (tc *BlobTransactionCreator) MakeTransaction(sender SenderAccount, nonce ui
 
 	key := sender.GetKey()
 
-	signedTx, err := types.SignNewTx(key, types.NewCancunSigner(globals.ChainID), sbtx)
+	signedTx, err := types.SignNewTx(key, types.NewPragueSigner(globals.ChainID), sbtx)
 	if err != nil {
 		return nil, err
 	}

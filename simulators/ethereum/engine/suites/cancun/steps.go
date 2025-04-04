@@ -223,7 +223,7 @@ func GetBlobDataInPayload(pool *TestBlobTxPool, payload *typ.ExecutableData) ([]
 		blobDataInPayload = make([]*BlobWrapData, 0)
 		blobTxsInPayload  = make([]*typ.TransactionWithBlobData, 0)
 	)
-	signer := types.NewCancunSigner(globals.ChainID)
+	signer := types.NewPragueSigner(globals.ChainID)
 
 	for i, binaryTx := range payload.Transactions {
 		// Unmarshal the tx from the payload, which should be the minimal version

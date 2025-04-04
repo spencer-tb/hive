@@ -344,9 +344,9 @@ func encodeBlockNumber(number uint64) []byte {
 }
 
 func (n *GethNode) SetBlock(block *types.Block, parentNumber uint64, parentRoot common.Hash) error {
-	parentTd := n.eth.BlockChain().GetTd(block.ParentHash(), block.NumberU64()-1)
+	// parentTd := n.eth.BlockChain().GetTd(block.ParentHash(), block.NumberU64()-1)
 	db := n.eth.ChainDb()
-	rawdb.WriteTd(db, block.Hash(), block.NumberU64(), parentTd.Add(parentTd, block.Difficulty()))
+	// rawdb.WriteTd(db, block.Hash(), block.NumberU64(), parentTd.Add(parentTd, block.Difficulty()))
 	rawdb.WriteBlock(db, block)
 
 	// write real info (fixes fake number test)
@@ -375,7 +375,7 @@ func (n *GethNode) SetBlock(block *types.Block, parentNumber uint64, parentRoot 
 	} else {
 		rawdb.WriteReceipts(db, block.Hash(), block.NumberU64(), result.Receipts)
 	}
-	root, err := statedb.Commit(block.NumberU64(), false)
+	root, err := statedb.Commit(block.NumberU64(), false, false)
 	if err != nil {
 		return errors.Wrap(err, "failed to commit state")
 	}

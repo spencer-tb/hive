@@ -470,10 +470,10 @@ func (cl *CLMocker) GetNextPayload() {
 		cl.Fatalf("CLMocker: Incorrect Number on payload built: %v != %v", cl.LatestPayloadBuilt.Number, cl.LatestHeader.Number.Uint64()+1)
 	}
 
-	if cl.IsCancun(cl.LatestPayloadBuilt.Timestamp) {
+	if cl.IsCancun(cl.LatestPayloadBuilt.Timestamp) || cl.IsPrague(cl.LatestPayloadBuilt.Timestamp) {
 		// Check if we have blobs to include in the broadcast
 		if cl.LatestBlobBundle == nil {
-			cl.Fatalf("CLMocker: No blob bundle on cancun")
+			cl.Fatalf("CLMocker: No blob bundle on cancun or prague")
 		}
 		// Broadcast the blob bundle to all clients
 		cl.LatestPayloadBuilt.VersionedHashes, err = cl.LatestBlobBundle.VersionedHashes(cancun.BLOB_COMMITMENT_VERSION_KZG)
