@@ -12,6 +12,7 @@ import (
 	beacon "github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
@@ -469,7 +470,11 @@ func (n *GethNode) NewPayloadV4(ctx context.Context, pl *typ.ExecutableData) (be
 	if pl.VersionedHashes == nil {
 		return beacon.PayloadStatusV1{}, fmt.Errorf("versioned hashes are nil")
 	}
-	resp, err := n.api.NewPayloadV4(ed, *pl.VersionedHashes, pl.ParentBeaconBlockRoot, pl.ExecutionRequests)
+	requests := make([]hexutil.Bytes, len(pl.Requests))
+	for i, req := range pl.Requests {
+		requests[i] = hexutil.Bytes(req)
+	}
+	resp, err := n.api.NewPayloadV4(ed, *pl.VersionedHashes, pl.ParentBeaconBlockRoot, requests)
 	n.latestPayloadStatusReponse = &resp
 	return resp, err
 }
