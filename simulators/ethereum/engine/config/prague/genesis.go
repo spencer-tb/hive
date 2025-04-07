@@ -11,16 +11,10 @@ import (
 
 // ConfigGenesis configures the genesis block for the Prague fork.
 func ConfigGenesis(genesis *core.Genesis, forkTimestamp uint64) error {
-	if genesis.Config.ShanghaiTime == nil {
-		return fmt.Errorf("prague fork requires shanghai fork")
-	}
 	if genesis.Config.CancunTime == nil {
 		return fmt.Errorf("prague fork requires cancun fork")
 	}
 	genesis.Config.PragueTime = &forkTimestamp
-	if *genesis.Config.ShanghaiTime > forkTimestamp {
-		return fmt.Errorf("cancun fork must be after shanghai fork")
-	}
 	if *genesis.Config.CancunTime > forkTimestamp {
 		return fmt.Errorf("prague fork must be after cancun fork")
 	}

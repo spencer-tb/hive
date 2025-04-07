@@ -403,6 +403,9 @@ func (tc *BaseTransactionCreator) MakeTransaction(sender SenderAccount, nonce ui
 			BlobHashes: hashes,
 			Sidecar:    sidecar,
 		}
+	case types.SetCodeTxType:
+		// TODO: implement SetCodeTx
+		newTxData = &types.SetCodeTx{}
 	}
 
 	tx := types.NewTx(newTxData)

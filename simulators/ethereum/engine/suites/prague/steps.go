@@ -515,10 +515,10 @@ func (step NewPayloads) Execute(t *TestContext) error {
 					return
 				}
 				if blobBundle == nil {
-					t.Fatalf("FAIL: Error getting blobs bundle (payload %d/%d): %v", p+1, payloadCount, blobBundle)
+					t.Fatalf("FAIL: Error getting blobs bundle (payload %d/%d): blobBundle is nil", p+1, payloadCount)
 				}
 				if requests == nil {
-					t.Fatalf("FAIL: Error getting execution requests (payload %d/%d): %v", p+1, payloadCount, requests)
+					t.Fatalf("FAIL: Error getting execution requests (payload %d/%d): requests are nil", p+1, payloadCount)
 				}
 
 				_, blobDataInPayload, err := GetBlobDataInPayload(t.TestBlobTxPool, payload)

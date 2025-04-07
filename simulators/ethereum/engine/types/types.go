@@ -137,7 +137,7 @@ type ExecutableData struct {
 	// NewPayload parameters
 	VersionedHashes       *[]common.Hash `json:"-"`
 	ParentBeaconBlockRoot *common.Hash   `json:"-"`
-	Requests              [][]byte       `json:"-"` // PayloadV4 Prague
+	Requests              [][]byte       `json:"-"`
 
 	// Payload Attributes used to build the block
 	PayloadAttributes PayloadAttributes `json:"-"`
@@ -181,6 +181,7 @@ type BlobAndProofV1 struct {
 
 type executionPayloadEnvelopeMarshaling struct {
 	BlockValue *hexutil.Big
+	Requests   []hexutil.Bytes
 }
 
 // Convert Execution Payload Types

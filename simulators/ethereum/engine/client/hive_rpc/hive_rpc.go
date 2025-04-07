@@ -418,6 +418,7 @@ func (ec *HiveRPCEngineClient) NewPayload(ctx context.Context, version int, payl
 		return result, err
 	}
 	if version >= 4 {
+		// TODO: remove this once proper fix is added
 		if payload.Requests == nil {
 			payload.Requests = [][]byte{}
 		}

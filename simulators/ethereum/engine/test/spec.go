@@ -238,6 +238,5 @@ func (s BaseSpec) IsMiningDisabled() bool {
 
 var LatestFork = config.ForkConfig{
 	ShanghaiTimestamp: big.NewInt(0),
-	CancunTimestamp:   big.NewInt(0),
-	PragueTimestamp:   big.NewInt(0),
+	CancunTimestamp:   big.NewInt(1),
 }

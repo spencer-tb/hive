@@ -83,8 +83,8 @@ func (f *ForkConfig) GetPayloadVersion(timestamp uint64) int {
 
 func (f *ForkConfig) GetSupportedTransactionTypes(timestamp uint64) []int {
 	if f.IsPrague(timestamp) {
-		// Prague is the first fork to support set code transactions
-		return []int{types.BlobTxType, types.LegacyTxType /* types.AccessListTxType,*/, types.DynamicFeeTxType}
+		// TODO: Uncomment and add 7702 tx types (Prague is the first fork to support set code transactions)
+		return []int{ /* types.SetCodeTxType,*/ types.BlobTxType, types.LegacyTxType /* types.AccessListTxType,*/, types.DynamicFeeTxType}
 	} else if f.IsCancun(timestamp) || f.IsPrague(timestamp) {
 		// Put the blob type at the start to try to guarantee at least one blob tx makes it into the test
 		return []int{types.BlobTxType, types.LegacyTxType /* types.AccessListTxType,*/, types.DynamicFeeTxType}
