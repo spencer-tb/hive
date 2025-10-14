@@ -69,7 +69,7 @@ func runSourceTest(t *hivesim.T, c *hivesim.Client, params hivesim.Params) {
 	if err != nil {
 		t.Fatal("can't get node peer-to-peer endpoint:", enode)
 	}
-	sinkParams := params.Set("HIVE_BOOTNODE", enode)
+	sinkParams := params.Set("HIVE_BOOTNODE", enode).Set("HIVE_NODETYPE", "snap")
 
 	// Sync all sink nodes against the source.
 	t.RunAllClients(hivesim.ClientTestSpec{
