@@ -1,5 +1,5 @@
 - client: go-ethereum
   dockerfile: git
   build_args:
-    git: https://github.com/spencer-tb/go-ethereum
-    branch: remove-named-forks-from-blob-schedule
+    github: spencer-tb/go-ethereum
+    tag: remove-named-forks-from-blob-schedule
