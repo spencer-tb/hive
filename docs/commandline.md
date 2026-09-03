@@ -87,6 +87,22 @@ built even when there are no changes to the simulator code.
 
 ### Simulation Options
 
+`--sim.buildarg <name=value>`: Passes a non-sensitive build argument to simulator
+image builds. This option may be specified multiple times. Do not use it for
+credentials or other secrets because build arguments can be retained in image
+history and build metadata.
+
+`--sim.buildsecret <id=ID,env=ENV_VAR>`: Exposes a secret from the named
+environment variable to BuildKit under the given secret ID. The command line
+contains only the environment-variable name, not its value. Dockerfiles consume
+the secret with `RUN --mount=type=secret,id=<id>`. This option may be specified
+multiple times.
+
+For example:
+
+    HIVE_GITHUB_TOKEN=... ./hive --sim ethereum/eels/consume-engine \
+        --sim.buildsecret id=github_token,env=HIVE_GITHUB_TOKEN
+
 `--sim.limit <pattern>`: Specifies a regular expression to selectively enable suites and
 test cases. This is interpreted by simulators. It sets the `HIVE_TEST_PATTERN` environment
 variable.

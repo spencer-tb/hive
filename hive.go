@@ -40,6 +40,52 @@ func (args *buildArgs) Set(value string) error {
 	return nil
 }
 
+// buildSecrets maps a BuildKit secret ID to the name of an environment
+// variable containing the secret. The secret value itself must never be
+// supplied on the hive command line.
+type buildSecrets map[string]string
+
+var (
+	buildSecretIDPattern   = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
+	environmentNamePattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+)
+
+func (secrets *buildSecrets) String() string {
+	var refs []string
+	for id, env := range *secrets {
+		refs = append(refs, "id="+id+",env="+env)
+	}
+	sort.Strings(refs)
+	return strings.Join(refs, ",")
+}
+
+// Set implements flag.Value.
+func (secrets *buildSecrets) Set(value string) error {
+	var id, env string
+	for _, field := range strings.Split(value, ",") {
+		key, fieldValue, ok := strings.Cut(field, "=")
+		if !ok || fieldValue == "" {
+			return errors.New("invalid build secret format, expected id=ID,env=ENV_VAR")
+		}
+		switch key {
+		case "id":
+			id = fieldValue
+		case "env":
+			env = fieldValue
+		default:
+			return fmt.Errorf("unknown build secret field %q", key)
+		}
+	}
+	if !buildSecretIDPattern.MatchString(id) {
+		return fmt.Errorf("invalid build secret ID %q", id)
+	}
+	if !environmentNamePattern.MatchString(env) {
+		return fmt.Errorf("invalid build secret environment variable name %q", env)
+	}
+	(*secrets)[id] = env
+	return nil
+}
+
 func main() {
 	var (
 		testResultsRoot = flag.String("results-root", "workspace/logs", "Target `directory` for results files and logs.")
@@ -94,6 +140,11 @@ Otherwise, it looks for files in the $HOME directory:
 	// Add the sim.buildarg flag multiple times to allow multiple build arguments.
 	simBuildArgs := make(buildArgs)
 	flag.Var(&simBuildArgs, "sim.buildarg", "Argument to pass to the docker engine when building the simulator image, in the form of ARGNAME=VALUE.")
+	// Build secrets contain references to environment variables, never secret
+	// values. They are exposed only to BuildKit RUN instructions which mount the
+	// corresponding secret ID.
+	simBuildSecrets := make(buildSecrets)
+	flag.Var(&simBuildSecrets, "sim.buildsecret", "BuildKit secret to expose when building the simulator image, in the form id=ID,env=ENV_VAR.")
 
 	// Parse the flags and configure the logger.
 	flag.Parse()
@@ -238,7 +289,7 @@ Otherwise, it looks for files in the $HOME directory:
 	}
 
 	// Build clients and simulators.
-	if err := runner.Build(ctx, clientList, simList, simBuildArgs); err != nil {
+	if err := runner.Build(ctx, clientList, simList, simBuildArgs, simBuildSecrets); err != nil {
 		fatal(err)
 	}
 	if *simDevMode {

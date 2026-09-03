@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -44,15 +45,19 @@ func (b *Builder) BuildClientImage(ctx context.Context, client libhive.ClientDes
 	dir := b.config.Inventory.ClientDirectory(client)
 	tag := fmt.Sprintf("hive/clients/%s:latest", client.Name())
 	dockerFile := client.Dockerfile()
-	err := b.buildImage(ctx, dir, dockerFile, tag, client.BuildArgs)
+	err := b.buildImage(ctx, dir, dockerFile, tag, client.BuildArgs, nil, false)
 	return tag, err
 }
 
 // BuildSimulatorImage builds a docker image of a simulator.
-func (b *Builder) BuildSimulatorImage(ctx context.Context, name string, buildArgs map[string]string) (string, error) {
+func (b *Builder) BuildSimulatorImage(ctx context.Context, name string, buildArgs, buildSecrets map[string]string) (string, error) {
 	dir := b.config.Inventory.SimulatorDirectory(name)
 	buildContextPath := dir
 	buildDockerfile := "Dockerfile"
+	useBuildKit, err := simulatorUsesBuildKit(dir)
+	if err != nil {
+		return "", err
+	}
 
 	// build context dir of simulator can be overridden with "hive_context.txt" file containing the desired build path
 	if contextPathBytes, err := os.ReadFile(filepath.Join(filepath.FromSlash(dir), "hive_context.txt")); err == nil {
@@ -67,7 +72,7 @@ func (b *Builder) BuildSimulatorImage(ctx context.Context, name string, buildArg
 		}
 	}
 	tag := fmt.Sprintf("hive/simulators/%s:latest", name)
-	err := b.buildImage(ctx, buildContextPath, buildDockerfile, tag, buildArgs)
+	err = b.buildImage(ctx, buildContextPath, buildDockerfile, tag, buildArgs, buildSecrets, useBuildKit)
 	return tag, err
 }
 
@@ -223,16 +228,22 @@ func (b *Builder) ReadFile(ctx context.Context, image, path string) ([]byte, err
 
 // buildImage builds a single docker image from the specified context.
 // branch specifies a build argument to use a specific base image branch or github source branch.
-func (b *Builder) buildImage(ctx context.Context, contextDir, dockerFile, imageTag string, buildArgs map[string]string) error {
+func (b *Builder) buildImage(ctx context.Context, contextDir, dockerFile, imageTag string, buildArgs, buildSecrets map[string]string, useBuildKit bool) error {
 	logger := b.logger.With("image", imageTag)
-	context, err := filepath.Abs(contextDir)
+	buildContext, err := filepath.Abs(contextDir)
 	if err != nil {
 		logger.Error("can't find path to context directory", "err", err)
 		return err
 	}
+	if len(buildSecrets) > 0 && !useBuildKit {
+		return fmt.Errorf("simulator build secrets require a hive_buildkit.txt marker in %s", contextDir)
+	}
+	if useBuildKit {
+		return b.buildImageWithBuildKit(ctx, buildContext, dockerFile, imageTag, buildArgs, buildSecrets)
+	}
 
 	opts := b.buildConfig(ctx, imageTag)
-	opts.ContextDir = context
+	opts.ContextDir = buildContext
 	opts.Dockerfile = dockerFile
 	logctx := []interface{}{"dir", contextDir, "nocache", opts.NoCache, "pull", opts.Pull}
 	if len(buildArgs) > 0 {
@@ -249,6 +260,88 @@ func (b *Builder) buildImage(ctx context.Context, contextDir, dockerFile, imageT
 		return err
 	}
 	return nil
+}
+
+// simulatorUsesBuildKit reports whether a simulator opts into the BuildKit
+// build path. A marker keeps this choice independent of the Dockerfile frontend
+// directive, which can require downloading a frontend image.
+func simulatorUsesBuildKit(simulatorDir string) (bool, error) {
+	_, err := os.Stat(filepath.Join(simulatorDir, "hive_buildkit.txt"))
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, fmt.Errorf("can't inspect BuildKit marker: %w", err)
+}
+
+// buildImageWithBuildKit invokes the Docker CLI because the Docker Engine build
+// API used by go-dockerclient cannot attach the session required to transfer
+// BuildKit secrets. Secret values remain in the referenced environment
+// variables; only their IDs and environment variable names appear in argv.
+func (b *Builder) buildImageWithBuildKit(ctx context.Context, contextDir, dockerFile, imageTag string, buildArgs, buildSecrets map[string]string) error {
+	opts := b.buildConfig(ctx, imageTag)
+	args, err := buildKitCommandArgs(b.client.Endpoint(), dockerFile, imageTag, opts.NoCache, opts.Pull, buildArgs, buildSecrets)
+	if err != nil {
+		return err
+	}
+	logctx := []interface{}{"dir", contextDir, "nocache", opts.NoCache, "pull", opts.Pull, "builder", "buildkit"}
+	for _, arg := range convertBuildArgs(buildArgs) {
+		logctx = append(logctx, arg.Name, arg.Value)
+	}
+	secretIDs := make([]string, 0, len(buildSecrets))
+	for id := range buildSecrets {
+		secretIDs = append(secretIDs, id)
+	}
+	slices.Sort(secretIDs)
+	for _, id := range secretIDs {
+		envName := buildSecrets[id]
+		logctx = append(logctx, "secret", id+"=env:"+envName)
+	}
+
+	logger := b.logger.With("image", imageTag)
+	logger.Info("building image", logctx...)
+	cmd := exec.CommandContext(ctx, "docker", args...)
+	cmd.Dir = contextDir
+	cmd.Env = append(os.Environ(), "DOCKER_BUILDKIT=1")
+	cmd.Stdout = opts.OutputStream
+	cmd.Stderr = opts.OutputStream
+	if err := cmd.Run(); err != nil {
+		logger.Error("image build failed", "err", err)
+		return fmt.Errorf("BuildKit image build failed: %w", err)
+	}
+	return nil
+}
+
+func buildKitCommandArgs(endpoint, dockerFile, imageTag string, noCache, pull bool, buildArgs, buildSecrets map[string]string) ([]string, error) {
+	args := make([]string, 0, 8+2*(len(buildArgs)+len(buildSecrets)))
+	if endpoint != "" {
+		args = append(args, "--host", endpoint)
+	}
+	args = append(args, "build", "--file", dockerFile, "--tag", imageTag)
+	if noCache {
+		args = append(args, "--no-cache")
+	}
+	if pull {
+		args = append(args, "--pull")
+	}
+	for _, arg := range convertBuildArgs(buildArgs) {
+		args = append(args, "--build-arg", arg.Name+"="+arg.Value)
+	}
+	secretIDs := make([]string, 0, len(buildSecrets))
+	for id := range buildSecrets {
+		secretIDs = append(secretIDs, id)
+	}
+	slices.Sort(secretIDs)
+	for _, id := range secretIDs {
+		envName := buildSecrets[id]
+		if value, ok := os.LookupEnv(envName); !ok || value == "" {
+			return nil, fmt.Errorf("build secret %q references unset or empty environment variable %q", id, envName)
+		}
+		args = append(args, "--secret", "id="+id+",env="+envName)
+	}
+	return append(args, "."), nil
 }
 
 func convertBuildArgs(m map[string]string) []docker.BuildArg {

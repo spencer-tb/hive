@@ -50,6 +50,11 @@ simulator directory root. This defines a relative path to start the docker build
 Local Go modules within the docker build can be linked by defining a `go.work`
 specifically for the Go modules copied into the docker build.
 
+A simulator that uses BuildKit-only Dockerfile features can add a
+`hive_buildkit.txt` marker in its directory. Hive then builds that simulator through
+the Docker CLI with BuildKit enabled. Simulator build secrets require this path and
+are mounted by the Dockerfile without being stored in image history.
+
 Example:
 
 `/simulators/my-simulator/hive_context.txt`:
